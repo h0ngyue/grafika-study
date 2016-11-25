@@ -26,8 +26,11 @@ import android.widget.ImageView;
 import android.widget.SimpleAdapter;
 import android.widget.TextView;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class MySimpleAdapter extends SimpleAdapter {
     public MySimpleAdapter(Context context, List<? extends Map<String, ?>> data,
@@ -38,6 +41,7 @@ public class MySimpleAdapter extends SimpleAdapter {
         mFrom = from;
         mTo = to;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
+        whilteList.addAll(Arrays.asList("Show + capture camera", "Record GL app"));
     }
 
 
@@ -67,6 +71,7 @@ public class MySimpleAdapter extends SimpleAdapter {
         return v;
     }
 
+    Set<String> whilteList = new HashSet<String>();
 
     private void bindView(int position, View view) {
         final Map dataSet = mData.get(position);
@@ -110,7 +115,7 @@ public class MySimpleAdapter extends SimpleAdapter {
                         // Note: keep the instanceof TextView check at the bottom of these
                         // ifs since a lot of views are TextViews (e.g. CheckBoxes).
                         setViewText((TextView) v, text);
-                        if (TextUtils.equals("Record GL app", text)) {
+                        if (!TextUtils.isEmpty(text) && whilteList.contains(text)) {
                             ((TextView) v).setTextColor(0xffff4444);
                         } else {
                             ((TextView) v).setTextColor(0xff000000);

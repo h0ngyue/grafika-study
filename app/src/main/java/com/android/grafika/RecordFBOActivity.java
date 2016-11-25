@@ -21,6 +21,7 @@ import android.opengl.GLES30;
 import android.opengl.GLSurfaceView;
 import android.opengl.Matrix;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -152,6 +153,11 @@ public class RecordFBOActivity extends Activity implements SurfaceHolder.Callbac
         }
 
         updateControls();
+    }
+
+    @Override
+    public File getFilesDir() {
+        return Environment.getExternalStorageDirectory();
     }
 
     @Override

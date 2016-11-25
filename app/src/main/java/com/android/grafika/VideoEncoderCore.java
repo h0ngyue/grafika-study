@@ -85,6 +85,11 @@ public class VideoEncoderCore {
         //
         // We're not actually interested in multiplexing audio.  We just want to convert
         // the raw H.264 elementary stream we get from MediaCodec into a .mp4 file.
+        if (!outputFile.exists()) {
+            Log.d("ye", "outputFile not exists");
+        } else {
+            Log.d("ye", "outputFile exists");
+        }
         mMuxer = new MediaMuxer(outputFile.toString(),
                 MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
 
