@@ -159,6 +159,10 @@ public class Sprite2d {
         mTextureId = textureId;
     }
 
+    public int getTxtId() {
+        return mTextureId;
+    }
+
     /**
      * Returns the color.
      * <p>

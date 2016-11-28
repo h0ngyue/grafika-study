@@ -16,6 +16,7 @@
 
 package com.android.grafika;
 
+import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
@@ -32,7 +33,6 @@ import android.view.SurfaceView;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
-import android.app.Activity;
 
 import com.android.grafika.gles.Drawable2d;
 import com.android.grafika.gles.EglCore;
@@ -44,6 +44,14 @@ import com.android.grafika.kikyo.MyUtil;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
+
+import filter.advanced.MagicSketchFilter;
+import filter.base.gpuimage.GPUImageFilter;
+import utils.MagicParams;
+import utils.TextureRotationUtil;
 
 /**
  * Direct the Camera preview to a GLES texture and manipulate it.
@@ -72,9 +80,9 @@ import java.lang.ref.WeakReference;
  * <li> The user updates a slider.
  * <li> The new value is passed as a percent to the render thread.
  * <li> The render thread converts the percent to something concrete (e.g. size in pixels).
- *      The rect geometry is updated.
+ * The rect geometry is updated.
  * <li> (For most things) The values computed by the render thread are sent back to the main
- *      UI thread.
+ * UI thread.
  * <li> (For most things) The UI thread updates some text views.
  * </ol>
  */
@@ -133,6 +141,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         sh.addCallback(this);
 
         mIvImageview = (ImageView) findViewById(R.id.mIvImageview);
+        MagicParams.context = getApplicationContext();
 
         mZoomBar = (SeekBar) findViewById(R.id.tfcZoom_seekbar);
         mSizeBar = (SeekBar) findViewById(R.id.tfcSize_seekbar);
@@ -272,9 +281,13 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
     }
 
     @Override   // SeekBar.OnSeekBarChangeListener
-    public void onStartTrackingTouch(SeekBar seekBar) {}
+    public void onStartTrackingTouch(SeekBar seekBar) {
+    }
+
     @Override   // SeekBar.OnSeekBarChangeListener
-    public void onStopTrackingTouch(SeekBar seekBar) {}
+    public void onStopTrackingTouch(SeekBar seekBar) {
+    }
+
     @Override
 
     /**
@@ -558,6 +571,8 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
                 finishSurfaceSetup();
             }
 
+            initFilters();
+
             mCameraTexture.setOnFrameAvailableListener(this);
         }
 
@@ -595,7 +610,22 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
 
             mWindowSurfaceWidth = width;
             mWindowSurfaceHeight = height;
+
             finishSurfaceSetup();
+        }
+
+        private void initFilters() {
+            filter = new MagicSketchFilter();
+            filter.init();
+            gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer();
+            gLCubeBuffer.put(TextureRotationUtil.CUBE).position(0);
+
+            gLTextureBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
+                    .order(ByteOrder.nativeOrder())
+                    .asFloatBuffer();
+            gLTextureBuffer.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
         }
 
         /**
@@ -607,6 +637,11 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             Log.d(TAG, "RenderThread surfaceDestroyed");
             releaseGl();
         }
+
+        private GPUImageFilter filter;
+        private FloatBuffer gLCubeBuffer;
+        private FloatBuffer gLTextureBuffer;
+
 
         /**
          * Sets up anything that depends on the window size.
@@ -682,7 +717,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             mCameraTexture.updateTexImage();
             draw();
 
-            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
+//            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
         }
 
         /**
@@ -693,7 +728,12 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
 
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
+
+
             mRect.draw(mTexProgram, mDisplayProjectionMatrix);
+
+//            filter.onDrawFrame(mRect.getTxtId(), gLCubeBuffer, gLTextureBuffer);
+
             mWindowSurface.swapBuffers();
 
             GlUtil.checkGlError("draw done");
@@ -846,7 +886,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
          * Call from UI thread.
          */
         public void sendSurfaceChanged(@SuppressWarnings("unused") int format, int width,
-                int height) {
+                                       int height) {
             // ignore format
             sendMessage(obtainMessage(MSG_SURFACE_CHANGED, width, height));
         }
@@ -965,7 +1005,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
                 case MSG_REDRAW:
                     renderThread.draw();
                     break;
-               default:
+                default:
                     throw new RuntimeException("unknown message " + what);
             }
         }
