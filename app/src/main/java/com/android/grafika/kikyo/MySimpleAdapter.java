@@ -41,7 +41,8 @@ public class MySimpleAdapter extends SimpleAdapter {
         mFrom = from;
         mTo = to;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
-        whilteList.addAll(Arrays.asList("Show + capture camera", "Record GL app"));
+        whilteList.addAll(Arrays.asList("Show + capture camera", "Record GL app", "{bench} glReadPixels speed test"
+                , "Simple GL in TextureView"));
     }
 
 

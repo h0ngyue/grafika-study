@@ -54,4 +54,12 @@
         android:text="@string/state_ready"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
+    <ImageView
+        android:id="@+id/mIvImageview"
+        android:layout_below="@id/textureResult_text"
+        android:layout_marginTop="10dp"
+        android:layout_width="480px"
+        android:layout_height="640px" />
+
+
 </RelativeLayout>

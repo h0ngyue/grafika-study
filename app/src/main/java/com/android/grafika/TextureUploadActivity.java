@@ -16,6 +16,11 @@
 
 package com.android.grafika;
 
+import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.res.Resources;
+import android.graphics.Bitmap;
 import android.opengl.GLES20;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -23,13 +28,9 @@ import android.os.Environment;
 import android.os.Process;
 import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.app.Activity;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
-import android.content.res.Resources;
-import android.graphics.Bitmap;
 
 import com.android.grafika.gles.Drawable2d;
 import com.android.grafika.gles.EglCore;
@@ -43,6 +44,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * An unscientific test of texture upload speed.
@@ -58,6 +60,8 @@ public class TextureUploadActivity extends Activity {
 
     private volatile boolean mIsCanceled;
 
+    public static ImageView mIvImageview;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -69,6 +73,7 @@ public class TextureUploadActivity extends Activity {
      */
     void setMessage(String msg) {
         TextView result = (TextView) findViewById(R.id.textureResult_text);
+        mIvImageview = (ImageView) findViewById(R.id.mIvImageview);
         result.setText(msg);
     }
 
@@ -83,12 +88,12 @@ public class TextureUploadActivity extends Activity {
         builder.setCancelable(false);   // only by button
         builder.setNegativeButton(R.string.cancel,
                 new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                mIsCanceled = true;
-                // let the async task handle dismiss the dialog
-            }
-        });
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        mIsCanceled = true;
+                        // let the async task handle dismiss the dialog
+                    }
+                });
         return builder.show();
 
     }
@@ -333,7 +338,7 @@ public class TextureUploadActivity extends Activity {
                     float rectWidth = 2f / TEX_PER_ITER;
                     float rectHeight = 1f;
                     rect.setScale(rectWidth, rectHeight);
-                    rect.setPosition(2f * i / TEX_PER_ITER - 1 + rectWidth / 2, - rectHeight / 2);
+                    rect.setPosition(2f * i / TEX_PER_ITER - 1 + rectWidth / 2, -rectHeight / 2);
                     rect.setTexture(textureHandles[i]);
                     rect.draw(texProgram, GlUtil.IDENTITY_MATRIX);
                 }
@@ -353,7 +358,7 @@ public class TextureUploadActivity extends Activity {
                 long redrawEndNanos = System.nanoTime();
 
                 long trimmedTime = (drawEndNanos - uploadStartNanos) -
-                                   (redrawEndNanos - drawEndNanos);
+                        (redrawEndNanos - drawEndNanos);
                 Log.d(TAG, "iter " + iteration +
                         " upload=" + (uploadEndNanos - uploadStartNanos) +
                         " draw=" + (drawEndNanos - uploadEndNanos) +
@@ -363,6 +368,34 @@ public class TextureUploadActivity extends Activity {
 
                 GLES20.glDeleteTextures(TEX_PER_ITER, textureHandles, 0);
                 eglSurface.swapBuffers();
+
+
+                ByteBuffer pixelBuf = ByteBuffer.allocateDirect(mWidth * mHeight * 4);
+                pixelBuf.order(ByteOrder.LITTLE_ENDIAN);
+                // Try to ensure that rendering has finished.
+                GLES20.glFinish();
+                GLES20.glReadPixels(0, 0, 1, 1,
+                        GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf);
+
+                // Time individual extraction.  Ideally we'd be timing a bunch of these calls
+                // and measuring the aggregate time, but we want the isolated time, and if we
+                // just read the same buffer repeatedly we might get some sort of cache effect.
+                long startWhen = System.nanoTime();
+                GLES20.glReadPixels(0, 0, mWidth, mHeight,
+                        GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf);
+
+                final Bitmap tmp = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888);
+                tmp.copyPixelsFromBuffer(pixelBuf);
+                mIvImageview.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mIvImageview.setImageBitmap(tmp);
+                    }
+                });
+
+
+                long consume = System.nanoTime() - startWhen;
+                Log.d(getLocalClassName(), String.format("ReadPixel, w:%d, h:%d, consume:%d", mWidth, mHeight, consume));
             }
 
             Log.d(TAG, "done");

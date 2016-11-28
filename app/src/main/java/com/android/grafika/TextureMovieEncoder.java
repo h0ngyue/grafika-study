@@ -60,7 +60,7 @@ import java.lang.ref.WeakReference;
  */
 public class TextureMovieEncoder implements Runnable {
     private static final String TAG = MainActivity.TAG;
-    private static final boolean VERBOSE = false;
+    private static final boolean VERBOSE = true;
 
     private static final int MSG_START_RECORDING = 0;
     private static final int MSG_STOP_RECORDING = 1;

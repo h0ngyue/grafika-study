@@ -16,18 +16,19 @@
 
 package com.android.grafika;
 
+import android.app.Activity;
+import android.graphics.SurfaceTexture;
 import android.opengl.GLES20;
-import android.opengl.GLES30;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
-import android.app.Activity;
-import android.graphics.SurfaceTexture;
+import android.widget.ImageView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
+import com.android.grafika.kikyo.MyUtil;
 
 /**
  * Simple demonstration of using GLES to draw on a TextureView.
@@ -35,10 +36,10 @@ import com.android.grafika.gles.WindowSurface;
  * Note that rendering is a multi-stage process:
  * <ol>
  * <li>Render thread draws with GL on its local EGLSurface, a window surface it created.  The
- *     window surface is backed by the SurfaceTexture from TextureVIew.
+ * window surface is backed by the SurfaceTexture from TextureVIew.
  * <li>The SurfaceTexture takes what is rendered onto it and makes it available as a GL texture.
  * <li>TextureView takes the GL texture and renders it onto its EGLSurface.  That EGLSurface
- *     is a window surface visible to the compositor.
+ * is a window surface visible to the compositor.
  * </ol>
  * It's important to bear in mind that Surface and EGLSurface are related but very
  * different things.
@@ -65,6 +66,7 @@ public class TextureViewGLActivity extends Activity {
 
     private TextureView mTextureView;
     private Renderer mRenderer;
+    private static ImageView mIvImageview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -77,6 +79,7 @@ public class TextureViewGLActivity extends Activity {
 
         setContentView(R.layout.activity_texture_view_gl);
         mTextureView = (TextureView) findViewById(R.id.glTextureView);
+        mIvImageview = (ImageView) findViewById(R.id.mIvImageview);
         mTextureView.setSurfaceTextureListener(mRenderer);
     }
 
@@ -230,6 +233,8 @@ public class TextureViewGLActivity extends Activity {
                     Log.d(TAG, "change direction");
                     xdir = -xdir;
                 }
+
+                MyUtil.tryReadPixels(width, height, mIvImageview);
             }
         }
 

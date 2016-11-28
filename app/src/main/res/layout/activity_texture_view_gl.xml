@@ -47,4 +47,11 @@
         android:text="@string/toggleReleaseCallbackOff"
         android:onClick="clickToggleRelease" />
 
+    <ImageView
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:id="@+id/mIvImageview"
+        android:layout_width="300px"
+        android:layout_height="400px" />
+
 </RelativeLayout>
