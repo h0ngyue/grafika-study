@@ -27,11 +27,13 @@ import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
+import android.view.TextureView;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemSelectedListener;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.Spinner;
 import android.widget.TextView;
 
@@ -148,6 +150,7 @@ public class CameraCaptureActivity extends Activity
         return Environment.getExternalStorageDirectory();
     }
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -156,6 +159,10 @@ public class CameraCaptureActivity extends Activity
         File outputFile = new File(getFilesDir(), "camera-test.mp4");
         TextView fileText = (TextView) findViewById(R.id.cameraOutputFile_text);
         fileText.setText(outputFile.toString());
+
+        TextureMovieEncoder.mIvDump = (ImageView) findViewById(R.id.mIvDump);
+        TextureView txtView = (TextureView) findViewById(R.id.mTxtDmp);
+        TextureMovieEncoder.setTxtView(txtView);
 
         Spinner spinner = (Spinner) findViewById(R.id.cameraFilter_spinner);
         ArrayAdapter<CharSequence> adapter = ArrayAdapter.createFromResource(this,

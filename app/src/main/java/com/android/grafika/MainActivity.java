@@ -37,6 +37,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import timber.log.Timber;
+
 /**
  * Main activity -- entry point from Launcher.
  */
@@ -81,7 +83,7 @@ public class MainActivity extends ListActivity {
             "Exercises SurfaceFlinger PTS handling",
             "ScheduledSwapActivity" },
         { "Show + capture camera",
-            "Shows camera preview, records when requested",
+            "Shows camera preview, records when requested(TextureMovieEncoder)",
             "CameraCaptureActivity" },
         { "Simple GL in TextureView",
             "Renders with GL as quickly as possible",
@@ -133,6 +135,8 @@ public class MainActivity extends ListActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        Timber.plant(new Timber.DebugTree());
 
         // One-time singleton initialization; requires activity context to get file location.
         ContentManager.initialize(this);

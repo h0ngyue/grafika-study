@@ -83,4 +83,16 @@
         android:paddingLeft="4dp"
         android:text="@string/cameraOutputFile_text" />
 
+    <ImageView
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:id="@+id/mIvDump"
+        android:layout_width="300px"
+        android:layout_height="400px" />
+
+    <TextureView
+        android:layout_alignParentBottom="true"
+        android:id="@+id/mTxtDmp"
+        android:layout_width="300px"
+        android:layout_height="400px" />
 </RelativeLayout>

@@ -23,15 +23,21 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
+import android.view.Surface;
+import android.view.TextureView;
+import android.widget.ImageView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.FullFrameRect;
 import com.android.grafika.gles.Texture2dProgram;
 import com.android.grafika.gles.WindowSurface;
+import com.android.grafika.kikyo.MyUtil;
 
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+
+import timber.log.Timber;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -53,9 +59,9 @@ import java.lang.ref.WeakReference;
  * <li>call TextureMovieEncoder#startRecording() with the config
  * <li>call TextureMovieEncoder#setTextureId() with the texture object that receives frames
  * <li>for each frame, after latching it with SurfaceTexture#updateTexImage(),
- *     call TextureMovieEncoder#frameAvailable().
+ * call TextureMovieEncoder#frameAvailable().
  * </ul>
- *
+ * <p>
  * TODO: tweak the API (esp. textureId) so it's less awkward for simple use cases.
  */
 public class TextureMovieEncoder implements Runnable {
@@ -93,7 +99,7 @@ public class TextureMovieEncoder implements Runnable {
      * under us).
      * <p>
      * TODO: make frame rate and iframe interval configurable?  Maybe use builder pattern
-     *       with reasonable defaults for those and bit rate.
+     * with reasonable defaults for those and bit rate.
      */
     public static class EncoderConfig {
         final File mOutputFile;
@@ -103,7 +109,7 @@ public class TextureMovieEncoder implements Runnable {
         final EGLContext mEglContext;
 
         public EncoderConfig(File outputFile, int width, int height, int bitRate,
-                EGLContext sharedEglContext) {
+                             EGLContext sharedEglContext) {
             mOutputFile = outputFile;
             mWidth = width;
             mHeight = height;
@@ -234,6 +240,7 @@ public class TextureMovieEncoder implements Runnable {
     /**
      * Encoder thread entry point.  Establishes Looper/Handler and waits for messages.
      * <p>
+     *
      * @see java.lang.Thread#run()
      */
     @Override
@@ -319,7 +326,8 @@ public class TextureMovieEncoder implements Runnable {
      * The texture is rendered onto the encoder's input surface, along with a moving
      * box (just because we can).
      * <p>
-     * @param transform The texture transform, from SurfaceTexture.
+     *
+     * @param transform      The texture transform, from SurfaceTexture.
      * @param timestampNanos The frame's timestamp, from SurfaceTexture.
      */
     private void handleFrameAvailable(float[] transform, long timestampNanos) {
@@ -331,6 +339,8 @@ public class TextureMovieEncoder implements Runnable {
 
         mInputWindowSurface.setPresentationTime(timestampNanos);
         mInputWindowSurface.swapBuffers();
+
+        MyUtil.tryReadPixels(mDebugWidth, mDebugHeight, mIvDump);
     }
 
     /**
@@ -376,18 +386,60 @@ public class TextureMovieEncoder implements Runnable {
     }
 
     private void prepareEncoder(EGLContext sharedContext, int width, int height, int bitRate,
-            File outputFile) {
+                                File outputFile) {
+        mDebugWidth = width;
+        mDebugHeight = height;
         try {
             mVideoEncoder = new VideoEncoderCore(width, height, bitRate, outputFile);
         } catch (IOException ioe) {
             throw new RuntimeException(ioe);
         }
         mEglCore = new EglCore(sharedContext, EglCore.FLAG_RECORDABLE);
-        mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
+        if (false) {
+            mInputWindowSurface = new WindowSurface(mEglCore, mVideoEncoder.getInputSurface(), true);
+        } else {
+            mInputWindowSurface = new WindowSurface(mEglCore, getTxtSurface(mDebugWidth, mDebugHeight), true);
+        }
         mInputWindowSurface.makeCurrent();
 
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+    }
+
+    private int mDebugWidth, mDebugHeight;
+    public static ImageView mIvDump;
+    private static TextureView mTestTxtView;
+
+    public static void setTxtView(TextureView view) {
+        mTestTxtView = view;
+    }
+
+    private Surface getTxtSurface(int width, int height) {
+        SurfaceTexture surfaceTexture = mTestTxtView.getSurfaceTexture();
+        surfaceTexture.setDefaultBufferSize(width, height);
+
+        mTestTxtView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                return false;
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+                Timber.d("mTestTxtView, onSurfaceTextureUpdated, ts:%d", surface.getTimestamp());
+            }
+        });
+        return new Surface(surfaceTexture);
     }
 
     private void releaseEncoder() {

@@ -40,7 +40,6 @@ import com.android.grafika.gles.GlUtil;
 import com.android.grafika.gles.Sprite2d;
 import com.android.grafika.gles.Texture2dProgram;
 import com.android.grafika.gles.WindowSurface;
-import com.android.grafika.kikyo.MyUtil;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -611,6 +610,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             mWindowSurfaceWidth = width;
             mWindowSurfaceHeight = height;
 
+            filterChanged();
             finishSurfaceSetup();
         }
 
@@ -626,6 +626,14 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
                     .order(ByteOrder.nativeOrder())
                     .asFloatBuffer();
             gLTextureBuffer.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
+        }
+
+        private void filterChanged() {
+            if (filter == null) {
+                return;
+            }
+            filter.onDisplaySizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
+            filter.onInputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
         }
 
         /**
@@ -651,6 +659,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         private void finishSurfaceSetup() {
             int width = mWindowSurfaceWidth;
             int height = mWindowSurfaceHeight;
+            filterChanged();
             Log.d(TAG, "finishSurfaceSetup size=" + width + "x" + height +
                     " camera=" + mCameraPreviewWidth + "x" + mCameraPreviewHeight);
 
@@ -676,6 +685,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             mCamera.startPreview();
         }
 
+
         /**
          * Updates the geometry of mRect, based on the size of the window and the current
          * values set by the UI.
@@ -683,6 +693,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         private void updateGeometry() {
             int width = mWindowSurfaceWidth;
             int height = mWindowSurfaceHeight;
+            filterChanged();
 
             int smallDim = Math.min(width, height);
             // Max scale is a bit larger than the screen, so we can show over-size.
@@ -716,8 +727,6 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         private void frameAvailable() {
             mCameraTexture.updateTexImage();
             draw();
-
-//            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
         }
 
         /**
@@ -729,12 +738,13 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             GLES20.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
             GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
 
-
             mRect.draw(mTexProgram, mDisplayProjectionMatrix);
 
-//            filter.onDrawFrame(mRect.getTxtId(), gLCubeBuffer, gLTextureBuffer);
+            filter.onDrawFrame(mRect.getTxtId(), gLCubeBuffer, gLTextureBuffer);
 
             mWindowSurface.swapBuffers();
+
+//            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
 
             GlUtil.checkGlError("draw done");
         }
