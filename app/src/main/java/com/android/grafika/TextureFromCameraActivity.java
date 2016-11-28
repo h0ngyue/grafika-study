@@ -29,6 +29,7 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
 import android.app.Activity;
@@ -39,6 +40,7 @@ import com.android.grafika.gles.GlUtil;
 import com.android.grafika.gles.Sprite2d;
 import com.android.grafika.gles.Texture2dProgram;
 import com.android.grafika.gles.WindowSurface;
+import com.android.grafika.kikyo.MyUtil;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -117,6 +119,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
     private int mZoomWidth, mZoomHeight;
     private int mRotateDeg;
 
+    private static ImageView mIvImageview;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -128,6 +131,8 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         SurfaceView sv = (SurfaceView) findViewById(R.id.cameraOnTexture_surfaceView);
         SurfaceHolder sh = sv.getHolder();
         sh.addCallback(this);
+
+        mIvImageview = (ImageView) findViewById(R.id.mIvImageview);
 
         mZoomBar = (SeekBar) findViewById(R.id.tfcZoom_seekbar);
         mSizeBar = (SeekBar) findViewById(R.id.tfcSize_seekbar);
@@ -676,6 +681,8 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         private void frameAvailable() {
             mCameraTexture.updateTexImage();
             draw();
+
+            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
         }
 
         /**

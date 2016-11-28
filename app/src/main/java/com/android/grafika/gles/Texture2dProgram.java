@@ -16,6 +16,8 @@
 
 package com.android.grafika.gles;
 
+import android.graphics.SurfaceTexture;
+import android.hardware.Camera;
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 import android.util.Log;

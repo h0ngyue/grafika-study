@@ -175,6 +175,20 @@ public class TextureViewGLActivity extends Activity {
             Log.d(TAG, "Renderer thread exiting");
         }
 
+//        private GPUImageFilter filter;
+//        void initFilters() {
+//            mInput = new MagicCameraInputFilter();
+//            mInput.init();
+////        filter = MagicFilterFactory.initFilters(type);
+//            // 先固定一个
+//            filter = MagicFilterFactory.initFilters(SKETCH);
+//            if (filter != null) {
+//                filter.init();
+//                filter.onInputSizeChanged(mPreviewWidth, mPreviewHeight);
+//                filter.onDisplaySizeChanged(mVideoWidth, mVideoHeight);
+//            }
+//        }
+
         /**
          * Draws updates as fast as the system will allow.
          * <p>
