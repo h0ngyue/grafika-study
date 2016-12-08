@@ -636,6 +636,8 @@ class CameraSurfaceRenderer implements GLSurfaceView.Renderer {
         mFullScreen = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
 
+        mVideoEncoder.initFilter();
+
         mTextureId = mFullScreen.createTextureObject();
 
         // Create a SurfaceTexture, with an external texture, in this EGL context.  We don't

@@ -87,8 +87,8 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:id="@+id/mIvDump"
-        android:layout_width="300px"
-        android:layout_height="400px" />
+        android:layout_width="320dp"
+        android:layout_height="240dp" />
 
     <TextureView
         android:layout_alignParentBottom="true"

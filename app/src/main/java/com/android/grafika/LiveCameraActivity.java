@@ -1,3 +1,4 @@
+
 /*
  * Copyright 2013 Google Inc. All rights reserved.
  *
@@ -20,10 +21,11 @@ import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.TextureView;
 
 import java.io.IOException;
+
+import timber.log.Timber;
 
 /**
  * More or less straight out of TextureView's doc.
@@ -75,9 +77,17 @@ public class LiveCameraActivity extends Activity implements TextureView.SurfaceT
         return true;
     }
 
+    private long mLastTsMs = 0;
+
     @Override
     public void onSurfaceTextureUpdated(SurfaceTexture surface) {
         // Invoked every time there's a new Camera preview frame
-        //Log.d(TAG, "updated, ts=" + surface.getTimestamp());
+
+        long start = System.nanoTime() / 1000000;
+        mTextureView.getBitmap();
+        long end = System.nanoTime() / 1000000;
+        Timber.d("updated, getBitmap = %d", end - start);
+        mLastTsMs = start;
+
     }
 }

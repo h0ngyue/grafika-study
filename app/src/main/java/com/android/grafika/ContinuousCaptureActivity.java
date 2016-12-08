@@ -418,7 +418,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
      * here after onPause().
      */
     private void drawFrame() {
-        //Log.d(TAG, "drawFrame");
+        Log.d(TAG, "drawFrame");
         if (mEglCore == null) {
             Log.d(TAG, "Skipping drawFrame after shutdown");
             return;
@@ -448,6 +448,8 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
             mEncoderSurface.setPresentationTime(mCameraTexture.getTimestamp());
             mEncoderSurface.swapBuffers();
         }
+
+
 
         mFrameNum++;
     }

@@ -25,9 +25,9 @@ public class MyUtil {
 
         // Try to ensure that rendering has finished.
         GLES20.glFinish();
-        pixelBuf.position(0);
-        GLES20.glReadPixels(0, 0, 1, 1,
-                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf);
+//        pixelBuf.position(0);
+//        GLES20.glReadPixels(0, 0, 1, 1,
+//                GLES20.GL_RGBA, GLES20.GL_UNSIGNED_BYTE, pixelBuf);
 
         // Time individual extraction.  Ideally we'd be timing a bunch of these calls
         // and measuring the aggregate time, but we want the isolated time, and if we

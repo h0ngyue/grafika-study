@@ -30,6 +30,7 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.view.TextureView;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -40,6 +41,7 @@ import com.android.grafika.gles.GlUtil;
 import com.android.grafika.gles.Sprite2d;
 import com.android.grafika.gles.Texture2dProgram;
 import com.android.grafika.gles.WindowSurface;
+import com.android.grafika.kikyo.MyUtil;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -138,6 +140,8 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         SurfaceView sv = (SurfaceView) findViewById(R.id.cameraOnTexture_surfaceView);
         SurfaceHolder sh = sv.getHolder();
         sh.addCallback(this);
+
+        TextureView tv;
 
         mIvImageview = (ImageView) findViewById(R.id.mIvImageview);
         MagicParams.context = getApplicationContext();
@@ -740,12 +744,15 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
 
             mRect.draw(mTexProgram, mDisplayProjectionMatrix);
 
-            filter.onDrawFrame(mRect.getTxtId(), gLCubeBuffer, gLTextureBuffer);
+//            filter.onDrawFrame(mRect.getTxtId(), gLCubeBuffer, gLTextureBuffer);
 
             mWindowSurface.swapBuffers();
 
-//            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
+            long start = System.nanoTime() / 1000000;
+            MyUtil.tryReadPixels(480, 640, mIvImageview);
 
+            long end = System.nanoTime() / 1000000;
+            Log.d("11", "tryReadPixels , consume :" + (end - start) + " ms");
             GlUtil.checkGlError("draw done");
         }
 

@@ -36,8 +36,15 @@ import com.android.grafika.kikyo.MyUtil;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
+import filter.advanced.MagicSketchFilter;
+import filter.base.gpuimage.GPUImageFilter;
 import timber.log.Timber;
+import utils.OpenGlUtils;
+import utils.TextureRotationUtil;
 
 /**
  * Encode a movie from frames rendered from an external texture image.
@@ -330,10 +337,18 @@ public class TextureMovieEncoder implements Runnable {
      * @param transform      The texture transform, from SurfaceTexture.
      * @param timestampNanos The frame's timestamp, from SurfaceTexture.
      */
+
     private void handleFrameAvailable(float[] transform, long timestampNanos) {
-        if (VERBOSE) Log.d(TAG, "handleFrameAvailable tr=" + transform);
+        if (VERBOSE) Log.d(TAG, "handleFrameAvailable mTextureId=" + mTextureId);
         mVideoEncoder.drainEncoder(false);
+
+        Timber.d("handleFrameAvailable");
+
         mFullScreen.drawFrame(mTextureId, transform);
+
+        if (filter != null) {
+//            filter.onDrawFrame(mTextureId, gLCubeBuffer, gLTextureBuffer);
+        }
 
         drawBox(mFrameNum++);
 
@@ -406,6 +421,27 @@ public class TextureMovieEncoder implements Runnable {
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
     }
 
+    public void initFilter() {
+        // 先固定一个
+        Timber.d("initFilter");
+        filter = new MagicSketchFilter();
+        filter.init();
+
+        gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        gLCubeBuffer.put(TextureRotationUtil.CUBE).position(0);
+
+        gLTextureBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        gLTextureBuffer.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
+    }
+
+
+    private GPUImageFilter filter;
+    private FloatBuffer gLCubeBuffer;
+    private FloatBuffer gLTextureBuffer;
     private int mDebugWidth, mDebugHeight;
     public static ImageView mIvDump;
     private static TextureView mTestTxtView;
@@ -455,6 +491,10 @@ public class TextureMovieEncoder implements Runnable {
         if (mEglCore != null) {
             mEglCore.release();
             mEglCore = null;
+        }
+        if (filter != null) {
+            filter.destroy();
+            filter = null;
         }
     }
 

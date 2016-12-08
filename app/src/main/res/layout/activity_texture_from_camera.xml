@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!-- Copyright 2014 Google Inc. All rights reserved.
+<?xml version="1.0" encoding="utf-8"?><!-- Copyright 2014 Google Inc. All rights reserved.
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -18,7 +17,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".CameraOnTextureActivity" >
+    tools:context=".CameraOnTextureActivity">
 
     <SurfaceView
         android:id="@+id/cameraOnTexture_surfaceView"
@@ -66,8 +65,8 @@
         android:id="@+id/tfcZoom_seekbar"
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/tfcRotateLabel_text"
-        android:layout_below="@+id/tfcZoomArea_text" />
+        android:layout_below="@+id/tfcZoomArea_text"
+        android:layout_toRightOf="@+id/tfcRotateLabel_text" />
 
     <TextView
         android:id="@+id/tfcSizeLabel_text"
@@ -81,8 +80,8 @@
         android:id="@+id/tfcSize_seekbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/tfcRotateLabel_text"
-        android:layout_below="@+id/tfcZoom_seekbar" />
+        android:layout_below="@+id/tfcZoom_seekbar"
+        android:layout_toRightOf="@+id/tfcRotateLabel_text" />
 
     <TextView
         android:id="@+id/tfcRotateLabel_text"
@@ -96,13 +95,14 @@
         android:id="@+id/tfcRotate_seekbar"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@+id/tfcRotateLabel_text"
-        android:layout_below="@+id/tfcSize_seekbar" />
+        android:layout_below="@+id/tfcSize_seekbar"
+        android:layout_toRightOf="@+id/tfcRotateLabel_text" />
+
     <ImageView
-        android:layout_alignParentBottom="true"
-        android:layout_alignParentRight="true"
         android:id="@+id/mIvImageview"
-        android:layout_width="300px"
-        android:layout_height="400px" />
+        android:layout_width="210dp"
+        android:layout_height="280dp"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true" />
 
 </RelativeLayout>
