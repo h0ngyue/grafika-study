@@ -52,6 +52,9 @@ public class MainActivity extends ListActivity {
      * the activity class.
      */
     private static final String[][] TESTS = {
+            {"Texture from Camera",
+                    "Resize and zoom the camera preview",
+                    "TextureFromCameraActivity2"},
             {"* Play video (TextureView)",
                     "Plays .mp4 videos created by Grafika",
                     "PlayMovieActivity"},
@@ -88,9 +91,7 @@ public class MainActivity extends ListActivity {
             {"Simple Canvas in TextureView",
                     "Renders with Canvas as quickly as possible",
                     "TextureViewCanvasActivity"},
-            {"Texture from Camera",
-                    "Resize and zoom the camera preview",
-                    "TextureFromCameraActivity"},
+
             {"{bench} glReadPixels speed test",
                     "Tests glReadPixels() performance with 720p frames",
                     "ReadPixelsActivity"},
@@ -172,7 +173,7 @@ public class MainActivity extends ListActivity {
             testList.add(tmp);
         }
 
-        Collections.sort(testList, TEST_LIST_COMPARATOR);
+//        Collections.sort(testList, TEST_LIST_COMPARATOR);
 
         return testList;
     }

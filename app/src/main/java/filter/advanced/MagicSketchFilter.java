@@ -4,11 +4,11 @@ import android.opengl.GLES20;
 
 import com.android.grafika.R;
 
-import filter.base.gpuimage.GPUImageFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 import utils.OpenGlUtils;
 
 
-public class MagicSketchFilter extends GPUImageFilter {
+public class MagicSketchFilter extends MyGPUImageFilter {
 	
 	private int mSingleStepOffsetLocation;
 	//0.0 - 1.0

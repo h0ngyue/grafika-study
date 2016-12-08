@@ -7,24 +7,24 @@ import android.opengl.GLES20;
 import java.nio.FloatBuffer;
 import java.util.List;
 
-import filter.base.gpuimage.GPUImageFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 import utils.OpenGlUtils;
 
 
-public class MagicBaseGroupFilter extends GPUImageFilter {
+public class MagicBaseGroupFilter extends MyGPUImageFilter {
 	protected static int[] frameBuffers = null;
     protected static int[] frameBufferTextures = null;
     private int frameWidth = -1;
     private int frameHeight = -1;
-    protected List<GPUImageFilter> filters;
+    protected List<MyGPUImageFilter> filters;
     
-    public MagicBaseGroupFilter(List<GPUImageFilter> filters){
+    public MagicBaseGroupFilter(List<MyGPUImageFilter> filters){
     	this.filters = filters;
     }
     
 	@Override
     public void onDestroy() {
-        for (GPUImageFilter filter : filters) {
+        for (MyGPUImageFilter filter : filters) {
             filter.destroy();
         }
         destroyFramebuffers();
@@ -32,7 +32,7 @@ public class MagicBaseGroupFilter extends GPUImageFilter {
     
     @Override
     public void init() {
-        for (GPUImageFilter filter : filters) {
+        for (MyGPUImageFilter filter : filters) {
             filter.init();
         }
     }
@@ -88,7 +88,7 @@ public class MagicBaseGroupFilter extends GPUImageFilter {
     	int size = filters.size();
         int previousTexture = textureId;
         for (int i = 0; i < size; i++) {
-        	GPUImageFilter filter = filters.get(i);
+        	MyGPUImageFilter filter = filters.get(i);
             boolean isNotLast = i < size - 1;
             if (isNotLast) {
             	GLES20.glViewport(0, 0, mIntputWidth, mIntputHeight);
@@ -113,7 +113,7 @@ public class MagicBaseGroupFilter extends GPUImageFilter {
     	int size = filters.size();
         int previousTexture = textureId;
         for (int i = 0; i < size; i++) {
-        	GPUImageFilter filter = filters.get(i);
+        	MyGPUImageFilter filter = filters.get(i);
             boolean isNotLast = i < size - 1;
             if (isNotLast) {
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffers[i]);

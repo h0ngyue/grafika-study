@@ -42,7 +42,9 @@ public class MySimpleAdapter extends SimpleAdapter {
         mTo = to;
         mInflater = (LayoutInflater) context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         whilteList.addAll(Arrays.asList("Show + capture camera", "Record GL app", "{bench} glReadPixels speed test"
-                , "Simple GL in TextureView", "Texture from Camera"));
+                , "Simple GL in TextureView"));
+        greenList.add("Texture from Camera");
+
     }
 
 
@@ -73,6 +75,7 @@ public class MySimpleAdapter extends SimpleAdapter {
     }
 
     Set<String> whilteList = new HashSet<String>();
+    Set<String> greenList = new HashSet<String>();
 
     private void bindView(int position, View view) {
         final Map dataSet = mData.get(position);
@@ -116,8 +119,14 @@ public class MySimpleAdapter extends SimpleAdapter {
                         // Note: keep the instanceof TextView check at the bottom of these
                         // ifs since a lot of views are TextViews (e.g. CheckBoxes).
                         setViewText((TextView) v, text);
-                        if (!TextUtils.isEmpty(text) && whilteList.contains(text)) {
-                            ((TextView) v).setTextColor(0xffff4444);
+                        if (!TextUtils.isEmpty(text) ) {
+                            if (whilteList.contains(text) ) {
+                                ((TextView) v).setTextColor(0xffff4444);
+                            } else if (greenList.contains(text)) {
+                                ((TextView) v).setTextColor(0xff00ffff);
+                            } else {
+                                ((TextView) v).setTextColor(0xff000000);
+                            }
                         } else {
                             ((TextView) v).setTextColor(0xff000000);
                         }

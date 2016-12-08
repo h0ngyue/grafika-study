@@ -2,13 +2,13 @@ package filter.helper;
 
 
 import filter.advanced.MagicSketchFilter;
-import filter.base.gpuimage.GPUImageFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 
 public class MagicFilterFactory{
 	
 	private static MagicFilterType filterType = MagicFilterType.NONE;
 	
-	public static GPUImageFilter initFilters(MagicFilterType type){
+	public static MyGPUImageFilter initFilters(MagicFilterType type){
 		filterType = type;
 		switch (type) {
 //		case WHITECAT:

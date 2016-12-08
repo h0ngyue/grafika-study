@@ -2,12 +2,12 @@ package filter.base;
 
 import android.opengl.GLES20;
 
-import filter.base.gpuimage.GPUImageFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 import utils.MagicParams;
 import utils.OpenGlUtils;
 
 
-public class MagicLookupFilter extends GPUImageFilter {
+public class MagicLookupFilter extends MyGPUImageFilter {
 
     public static final String LOOKUP_FRAGMENT_SHADER = ""+
     		"varying highp vec2 textureCoordinate;\n" +

@@ -23,7 +23,7 @@ import android.opengl.GLES20;
  * <br>
  * sharpness: from -4.0 to 4.0, with 0.0 as the normal level
  */
-public class GPUImageSharpenFilter extends GPUImageFilter {
+public class GPUImageSharpenFilter extends MyGPUImageFilter {
     public static final String SHARPEN_VERTEX_SHADER = "" +
             "attribute vec4 position;\n" +
             "attribute vec4 inputTextureCoordinate;\n" +

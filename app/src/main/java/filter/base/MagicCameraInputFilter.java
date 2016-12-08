@@ -8,11 +8,11 @@ import com.android.grafika.R;
 
 import java.nio.FloatBuffer;
 
-import filter.base.gpuimage.GPUImageFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 import utils.MagicParams;
 import utils.OpenGlUtils;
 
-public class MagicCameraInputFilter extends GPUImageFilter {
+public class MagicCameraInputFilter extends MyGPUImageFilter {
 
     private float[] mTextureTransformMatrix;
     private int mTextureTransformMatrixLocation;
@@ -27,6 +27,8 @@ public class MagicCameraInputFilter extends GPUImageFilter {
     public MagicCameraInputFilter(){
         super(OpenGlUtils.readShaderFromRawResource(R.raw.default_vertex) ,
                 OpenGlUtils.readShaderFromRawResource(R.raw.default_fragment));
+//        super(NO_FILTER_VERTEX_SHADER ,
+//                NO_FILTER_FRAGMENT_SHADER);
     }
 
     protected void onInit() {

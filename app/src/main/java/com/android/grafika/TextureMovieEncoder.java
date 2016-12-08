@@ -41,9 +41,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.advanced.MagicSketchFilter;
-import filter.base.gpuimage.GPUImageFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 import timber.log.Timber;
-import utils.OpenGlUtils;
 import utils.TextureRotationUtil;
 
 /**
@@ -439,7 +438,7 @@ public class TextureMovieEncoder implements Runnable {
     }
 
 
-    private GPUImageFilter filter;
+    private MyGPUImageFilter filter;
     private FloatBuffer gLCubeBuffer;
     private FloatBuffer gLTextureBuffer;
     private int mDebugWidth, mDebugHeight;

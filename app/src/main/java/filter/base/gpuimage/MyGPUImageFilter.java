@@ -29,7 +29,7 @@ import utils.OpenGlUtils;
 import utils.Rotation;
 import utils.TextureRotationUtil;
 
-public class GPUImageFilter {
+public class MyGPUImageFilter {
     public static final String NO_FILTER_VERTEX_SHADER = "" +
             "attribute vec4 position;\n" +
             "attribute vec4 inputTextureCoordinate;\n" +
@@ -66,11 +66,11 @@ public class GPUImageFilter {
     protected FloatBuffer mGLTextureBuffer;
     protected int mOutputWidth, mOutputHeight;
     
-    public GPUImageFilter() {
+    public MyGPUImageFilter() {
         this(NO_FILTER_VERTEX_SHADER, NO_FILTER_FRAGMENT_SHADER);
     }
 
-    public GPUImageFilter(final String vertexShader, final String fragmentShader) {
+    public MyGPUImageFilter(final String vertexShader, final String fragmentShader) {
         mRunOnDraw = new LinkedList<Runnable
                 >();
         mVertexShader = vertexShader;

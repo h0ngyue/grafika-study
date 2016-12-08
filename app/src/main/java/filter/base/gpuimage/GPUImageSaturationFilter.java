@@ -21,7 +21,7 @@ import android.opengl.GLES20;
 /**
  * saturation: The degree of saturation or desaturation to apply to the image (0.0 - 2.0, with 1.0 as the default)
  */
-public class GPUImageSaturationFilter extends GPUImageFilter {
+public class GPUImageSaturationFilter extends MyGPUImageFilter {
     public static final String SATURATION_FRAGMENT_SHADER = "" +
             " varying highp vec2 textureCoordinate;\n" +
             " \n" +

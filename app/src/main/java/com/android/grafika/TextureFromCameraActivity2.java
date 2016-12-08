@@ -30,7 +30,6 @@ import android.view.MotionEvent;
 import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
-import android.view.TextureView;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
@@ -50,8 +49,11 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.advanced.MagicSketchFilter;
+import filter.base.GPUImageFilter;
+import filter.base.MagicCameraInputFilter;
 import filter.base.gpuimage.MyGPUImageFilter;
 import utils.MagicParams;
+import utils.OpenGlUtils;
 import utils.TextureRotationUtil;
 
 /**
@@ -87,9 +89,9 @@ import utils.TextureRotationUtil;
  * <li> (For most things) The UI thread updates some text views.
  * </ol>
  */
-public class TextureFromCameraActivity extends Activity implements SurfaceHolder.Callback,
+public class TextureFromCameraActivity2 extends Activity implements SurfaceHolder.Callback,
         SeekBar.OnSeekBarChangeListener {
-    private static final String TAG = MainActivity.TAG;
+    private static final String TAG = "";
 
     private static final int DEFAULT_ZOOM_PERCENT = 0;      // 0-100
     private static final int DEFAULT_SIZE_PERCENT = 50;     // 0-100
@@ -140,8 +142,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         SurfaceView sv = (SurfaceView) findViewById(R.id.cameraOnTexture_surfaceView);
         SurfaceHolder sh = sv.getHolder();
         sh.addCallback(this);
-
-        TextureView tv;
+//        sh.setFixedSize(480, 640);
 
         mIvImageview = (ImageView) findViewById(R.id.mIvImageview);
         MagicParams.context = getApplicationContext();
@@ -351,10 +352,10 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         private static final int MSG_SEND_ZOOM_AREA = 3;
         private static final int MSG_SEND_ROTATE_DEG = 4;
 
-        private WeakReference<TextureFromCameraActivity> mWeakActivity;
+        private WeakReference<TextureFromCameraActivity2> mWeakActivity;
 
-        public MainHandler(TextureFromCameraActivity activity) {
-            mWeakActivity = new WeakReference<TextureFromCameraActivity>(activity);
+        public MainHandler(TextureFromCameraActivity2 activity) {
+            mWeakActivity = new WeakReference<TextureFromCameraActivity2>(activity);
         }
 
         /**
@@ -398,7 +399,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
 
         @Override
         public void handleMessage(Message msg) {
-            TextureFromCameraActivity activity = mWeakActivity.get();
+            TextureFromCameraActivity2 activity = mWeakActivity.get();
             if (activity == null) {
                 Log.d(TAG, "Got message for dead activity");
                 return;
@@ -558,10 +559,18 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
 
             // Create and configure the SurfaceTexture, which will receive frames from the
             // camera.  We set the textured rect's program to render from it.
+
             mTexProgram = new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT);
-            int textureId = mTexProgram.createTextureObject();
+            int textureId = OpenGlUtils.getExternalOESTextureID();//mTexProgram.createTextureObject();
             mCameraTexture = new SurfaceTexture(textureId);
             mRect.setTexture(textureId);
+
+//            mTxtId = textureId;
+//            inputFilter = new MagicCameraInputFilter();
+//            inputFilter.init();
+
+
+//            initFilters();
 
             if (!newSurface) {
                 // This Surface was established on a previous run, so no surfaceChanged()
@@ -574,7 +583,6 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
                 finishSurfaceSetup();
             }
 
-            initFilters();
 
             mCameraTexture.setOnFrameAvailableListener(this);
         }
@@ -619,8 +627,13 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
         }
 
         private void initFilters() {
-            filter = new MagicSketchFilter();
-            filter.init();
+            myGPUImageFilter = new MagicSketchFilter();
+            myGPUImageFilter.init();
+
+            gpuImageFilter = new GPUImageFilter();
+            gpuImageFilter.init();
+
+
             gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
                     .order(ByteOrder.nativeOrder())
                     .asFloatBuffer();
@@ -630,14 +643,18 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
                     .order(ByteOrder.nativeOrder())
                     .asFloatBuffer();
             gLTextureBuffer.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
+
+
         }
 
         private void filterChanged() {
-            if (filter == null) {
+            if (myGPUImageFilter == null) {
                 return;
             }
-            filter.onDisplaySizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
-            filter.onInputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
+            myGPUImageFilter.onDisplaySizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
+            myGPUImageFilter.onInputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
+
+            gpuImageFilter.onOutputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
         }
 
         /**
@@ -650,7 +667,10 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             releaseGl();
         }
 
-        private MyGPUImageFilter filter;
+        private MyGPUImageFilter myGPUImageFilter;
+        private GPUImageFilter gpuImageFilter;
+        private int mTxtId;
+        private MagicCameraInputFilter inputFilter;
         private FloatBuffer gLCubeBuffer;
         private FloatBuffer gLTextureBuffer;
 
@@ -744,15 +764,23 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
 
             mRect.draw(mTexProgram, mDisplayProjectionMatrix);
 
+//            float[] mtx = new float[16];
+//            mCameraTexture.getTransformMatrix(mtx);
+//            inputFilter.setTextureTransformMatrix(mtx);
+//            inputFilter.onDrawFrame(mTxtId);
+
+//            gpuImageFilter.onDraw(mTxtId, gLCubeBuffer, gLTextureBuffer);
+
+
 //            filter.onDrawFrame(mRect.getTxtId(), gLCubeBuffer, gLTextureBuffer);
+
+//            mWindowSurface.setPresentationTime(mCameraTexture.getTimestamp());
 
             mWindowSurface.swapBuffers();
 
-            long start = System.nanoTime() / 1000000;
+//            MyUtil.tryReadPixels(mWindowSurfaceWidth, mWindowSurfaceHeight, mIvImageview);
             MyUtil.tryReadPixels(480, 640, mIvImageview);
 
-            long end = System.nanoTime() / 1000000;
-            Log.d("11", "tryReadPixels , consume :" + (end - start) + " ms");
             GlUtil.checkGlError("draw done");
         }
 
