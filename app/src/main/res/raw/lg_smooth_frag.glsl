@@ -1,5 +1,5 @@
 #extension GL_OES_EGL_image_external : require
-//precision mediump float;
+precision mediump float;
 //varying vec2 vTextureCoord;
 //uniform samplerExternalOES sTexture;
 
@@ -41,6 +41,8 @@ void main()
      lowp float b = base.b;
 
 
+//    gl_FragColor = vec4(0, 0, 1.0, 1.0);
+//    return;
      if (r > 0.3725 && g > 0.1568 && b > 0.0784 && r > b && (max(max(r, g), b) - min(min(r, g), b)) > 0.0588 && abs(r - g) > 0.0588) {
          mediump float mXStep = 1.0/1280.0;
          mediump float mYStep = 1.0/720.0;

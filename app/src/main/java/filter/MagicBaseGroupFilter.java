@@ -1,39 +1,51 @@
-package filter.base;
+package filter;
 
 
 import android.opengl.GLES20;
-
 
 import java.nio.FloatBuffer;
 import java.util.List;
 
 import filter.base.gpuimage.MyGPUImageFilter;
-import utils.OpenGlUtils;
-
 
 public class MagicBaseGroupFilter extends MyGPUImageFilter {
-	protected static int[] frameBuffers = null;
+    protected static int[] frameBuffers = null;
     protected static int[] frameBufferTextures = null;
     private int frameWidth = -1;
     private int frameHeight = -1;
     protected List<MyGPUImageFilter> filters;
-    
-    public MagicBaseGroupFilter(List<MyGPUImageFilter> filters){
-    	this.filters = filters;
+
+    private int viewportStartX, viewportStartY, vpWidth, vpHeight;
+
+    public void setViewportParam(int x, int y, int vpWidth, int vpHeight) {
+        viewportStartX = x;
+        viewportStartY = y;
+        this.vpWidth = vpWidth;
+        this.vpHeight = vpHeight;
     }
-    
-	@Override
+
+    public MagicBaseGroupFilter(List<MyGPUImageFilter> filters) {
+        this.filters = filters;
+    }
+
+    @Override
     public void onDestroy() {
         for (MyGPUImageFilter filter : filters) {
             filter.destroy();
         }
-        destroyFramebuffers();
     }
-    
+
     @Override
     public void onInit() {
         for (MyGPUImageFilter filter : filters) {
-            filter.init();
+            filter.onInit();
+        }
+    }
+
+    @Override
+    public void onInitialized() {
+        for (MyGPUImageFilter filter : filters) {
+            filter.onInitialized();
         }
     }
 
@@ -44,18 +56,18 @@ public class MagicBaseGroupFilter extends MyGPUImageFilter {
         for (int i = 0; i < size; i++) {
             filters.get(i).onInputSizeChanged(width, height);
         }
-        if(frameBuffers != null && (frameWidth != width || frameHeight != height || frameBuffers.length != size-1)){
-			destroyFramebuffers();
-			frameWidth = width;
-			frameHeight = height;
-		}
+        if (frameBuffers != null && (frameWidth != width || frameHeight != height || frameBuffers.length != size - 1)) {
+            destroyFramebuffers();
+            frameWidth = width;
+            frameHeight = height;
+        }
         if (frameBuffers == null) {
-        	frameBuffers = new int[size-1];
-            frameBufferTextures = new int[size-1];
+            frameBuffers = new int[size - 1];
+            frameBufferTextures = new int[size - 1];
 
-            for (int i = 0; i < size-1; i++) {
+            for (int i = 0; i < size - 1; i++) {
                 GLES20.glGenFramebuffers(1, frameBuffers, i);
-                
+
                 GLES20.glGenTextures(1, frameBufferTextures, i);
                 GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, frameBufferTextures[i]);
                 GLES20.glTexImage2D(GLES20.GL_TEXTURE_2D, 0, GLES20.GL_RGBA, width, height, 0,
@@ -78,58 +90,64 @@ public class MagicBaseGroupFilter extends MyGPUImageFilter {
             }
         }
     }
-    
+
     @Override
     public void onDraw(final int textureId, final FloatBuffer cubeBuffer,
-    		final FloatBuffer textureBuffer) {
-    	if (frameBuffers == null || frameBufferTextures == null) {
+                       final FloatBuffer textureBuffer) {
+        if (frameBuffers == null || frameBufferTextures == null) {
 //            return OpenGlUtils.NOT_INIT;
             return;
         }
-    	int size = filters.size();
+
+        int size = filters.size();
         int previousTexture = textureId;
         for (int i = 0; i < size; i++) {
-        	MyGPUImageFilter filter = filters.get(i);
+            MyGPUImageFilter filter = filters.get(i);
             boolean isNotLast = i < size - 1;
             if (isNotLast) {
-            	GLES20.glViewport(0, 0, mIntputWidth, mIntputHeight);
+                GLES20.glViewport(0, 0, mIntputWidth, mIntputHeight);
+//                GLES20.glViewport(viewportStartX, viewportStartY, mIntputWidth, mIntputHeight);
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffers[i]);
                 GLES20.glClearColor(0, 0, 0, 0);
                 filter.onDraw(previousTexture, mGLCubeBuffer, mGLTextureBuffer);
                 GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
                 previousTexture = frameBufferTextures[i];
-            }else{
-            	GLES20.glViewport(0, 0, mOutputWidth, mOutputHeight);
-            	filter.onDraw(previousTexture, cubeBuffer, textureBuffer);
+            } else {
+                GLES20.glViewport(viewportStartX, viewportStartY, vpWidth, vpHeight);
+                filter.onDraw(previousTexture, cubeBuffer, textureBuffer);
             }
         }
-//    	return OpenGlUtils.ON_DRAWN;
-        return;
+
+//        Timber.d("onDrawFrame, viewportStartX:%d, viewportStartY:%d, vpWidth:%d, vpHeight:%d,mIntputWidth:%d, mIntputHeight:%d, mOutputWidth:%d, mOutputHeight:%d",
+//                viewportStartX, viewportStartY, vpWidth, vpHeight, mIntputWidth, mIntputHeight, mOutputWidth, mOutputHeight);
+
+//        return OpenGlUtils.ON_DRAWN;
     }
-    
-    @Override
-    public int onDraw(final int textureId) {
-    	if (frameBuffers == null || frameBufferTextures == null) {
-            return OpenGlUtils.NOT_INIT;
-        }
-    	int size = filters.size();
-        int previousTexture = textureId;
-        for (int i = 0; i < size; i++) {
-        	MyGPUImageFilter filter = filters.get(i);
-            boolean isNotLast = i < size - 1;
-            if (isNotLast) {
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffers[i]);
-                GLES20.glClearColor(0, 0, 0, 0);
-                filter.onDraw(previousTexture, mGLCubeBuffer, mGLTextureBuffer);
-                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
-                previousTexture = frameBufferTextures[i];
-            }else{
-            	filter.onDraw(previousTexture, mGLCubeBuffer, mGLTextureBuffer);
-            }
-        }
-    	return OpenGlUtils.ON_DRAWN;
-    }
-    
+
+
+//    @Override
+//    public int onDrawFrame(final int textureId) {
+//        if (frameBuffers == null || frameBufferTextures == null) {
+//            return OpenGlUtils.NOT_INIT;
+//        }
+//        int size = filters.size();
+//        int previousTexture = textureId;
+//        for (int i = 0; i < size; i++) {
+//            MyGPUImageFilter filter = filters.get(i);
+//            boolean isNotLast = i < size - 1;
+//            if (isNotLast) {
+//                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, frameBuffers[i]);
+//                GLES20.glClearColor(0, 0, 0, 0);
+//                filter.onDraw(previousTexture, mGLCubeBuffer, mGLTextureBuffer);
+//                GLES20.glBindFramebuffer(GLES20.GL_FRAMEBUFFER, 0);
+//                previousTexture = frameBufferTextures[i];
+//            } else {
+//                filter.onDraw(previousTexture, mGLCubeBuffer, mGLTextureBuffer);
+//            }
+//        }
+//        return OpenGlUtils.ON_DRAWN;
+//    }
+
     private void destroyFramebuffers() {
         if (frameBufferTextures != null) {
             GLES20.glDeleteTextures(frameBufferTextures.length, frameBufferTextures, 0);
@@ -140,8 +158,8 @@ public class MagicBaseGroupFilter extends MyGPUImageFilter {
             frameBuffers = null;
         }
     }
-    
-    public int getSize(){
-    	return filters.size();
+
+    public int getSize() {
+        return filters.size();
     }
 }

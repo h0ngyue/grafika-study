@@ -314,7 +314,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
      */
     private void updateControls() {
         String str = getString(R.string.secondsOfVideo, mSecondsOfVideo);
-        TextView tv = (TextView) findViewById(R.id.capturedVideoDesc_text);
+        TextView tv = (TextView) findViewById(R.id.mTvFps);
         tv.setText(str);
 
         boolean wantEnabled = (mCircEncoder != null) && !mFileSaveInProgress;

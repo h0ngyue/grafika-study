@@ -33,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import filter.BeautyCamera;
 import timber.log.Timber;
 import utils.MagicParams;
 
@@ -134,6 +135,7 @@ public class MainActivity extends ListActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        BeautyCamera.init(getApplicationContext());
         Timber.plant(new Timber.DebugTree());
         MagicParams.context = getApplicationContext();
 

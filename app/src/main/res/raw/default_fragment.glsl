@@ -21,8 +21,8 @@ float hardLight(float color)
 }
 
 void main(){
-//     gl_FragColor = texture2D(inputImageTexture, textureCoordinate);
-//     return;
+     gl_FragColor = texture2D(inputImageTexture, textureCoordinate);
+     return;
 
     vec3 centralColor = texture2D(inputImageTexture, textureCoordinate).rgb;
 

@@ -16,11 +16,14 @@
 
 package filter.base.gpuimage;
 
+import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
+
+import javax.microedition.khronos.opengles.GL11Ext;
 
 import filter.base.GPUImageFilter;
 import utils.OpenGlUtils;
@@ -77,6 +80,7 @@ public class MyGPUImageFilter extends GPUImageFilter {
         if (textureId != OpenGlUtils.NO_TEXTURE) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+//            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
             GLES20.glUniform1i(mGLUniformTexture, 0);
         }
         onDrawArraysPre();
@@ -119,6 +123,7 @@ public class MyGPUImageFilter extends GPUImageFilter {
 		if (textureId != OpenGlUtils.NO_TEXTURE) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
 		    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
+//            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
 		    GLES20.glUniform1i(mGLUniformTexture, 0);
 		}
 		onDrawArraysPre();

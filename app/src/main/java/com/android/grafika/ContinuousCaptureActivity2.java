@@ -31,6 +31,7 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.FullFrameRect;
@@ -41,10 +42,18 @@ import com.android.grafika.kikyo.MyUtil;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.FloatBuffer;
 
+import filter.MagicBaseGroupFilter;
+import filter.MyBeautyFilter;
+import filter.MyRGBMapFilter;
 import filter.MySmoothFilter;
 import filter.base.MagicCameraInputFilter;
 import filter.base.gpuimage.MyGPUImageFilter;
+import filter.utils.TextureRotationUtil;
+import timber.log.Timber;
 import utils.OpenGlUtils;
 
 /**
@@ -63,10 +72,12 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = MainActivity.TAG;
 
-    public static final boolean use_camera_inputer = false;
+    public static final boolean use_camera_inputer = true;
 
-    private static final int VIDEO_WIDTH = 1280;  // dimensions for 720p video
-    private static final int VIDEO_HEIGHT = 720;
+    //    private static final int VIDEO_WIDTH = 1280;  // dimensions for 720p video
+//    private static final int VIDEO_HEIGHT = 720;
+    private static final int VIDEO_WIDTH = 640;  // dimensions for 720p video
+    private static final int VIDEO_HEIGHT = 480;
     private static final int DESIRED_PREVIEW_FPS = 15;
 
     private EglCore mEglCore;
@@ -75,7 +86,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private FullFrameRect mFullFrameBlit;
     private final float[] mTmpMatrix = new float[16];
     private int mTextureId;
-    private int mFrameNum;
+    private int mFrameNum = -1;
 
     private Camera mCamera;
     private int mCameraPreviewThousandFps;
@@ -84,11 +95,22 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private MainHandler mHandler;
 
     private ImageView mIvDump;
-    private CheckBox mCbOutput2Image, mCbUseBeauty;
-    private boolean mOutput2Image, mUseBeauty;
+    private CheckBox mCbOutput2Image, mCbUseBeauty, mCbReadPixel;
+    private boolean mOutput2Image, mUseBeauty, mReadPixel;
 
-    private MyGPUImageFilter mCameraInputFilter;
-    private MyGPUImageFilter mBeautyFilter;
+    private MyGPUImageFilter mCameraInputFilter = new MagicCameraInputFilter();
+
+    //    private MyGPUImageFilter mBeautyFilter = new MyBeautyFilter();
+    private MyGPUImageFilter mBeautyFilter = new MySmoothFilter();
+//    private MyGPUImageFilter mBeautyFilter = new MyRGBMapFilter();
+
+    private TextView mTvFps;
+
+    private long mFpsStartTs;
+
+    public volatile FloatBuffer gLCubeBuffer;
+    public volatile FloatBuffer gLTextureBufferMirror;
+    public volatile FloatBuffer gLTextureBufferNormal;
 
 
     /**
@@ -158,8 +180,33 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             }
         });
 
+        mCbReadPixel = (CheckBox) findViewById(R.id.mCbReadPixel);
+        mCbReadPixel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mReadPixel = isChecked;
+            }
+        });
+
+        mTvFps = (TextView) findViewById(R.id.mTvFps);
+
 
         mHandler = new MainHandler(this);
+
+        gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        gLCubeBuffer.put(TextureRotationUtil.CUBE).position(0);
+
+        gLTextureBufferMirror = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        gLTextureBufferMirror.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
+
+        gLTextureBufferNormal = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
+                .order(ByteOrder.nativeOrder())
+                .asFloatBuffer();
+        gLTextureBufferMirror.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
     }
 
     @Override
@@ -295,11 +342,15 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             mFullFrameBlit = new FullFrameRect(
                     new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
         } else {
-            mCameraInputFilter = new MagicCameraInputFilter();
             mCameraInputFilter.init();
 
-            mBeautyFilter = new MySmoothFilter();
             mBeautyFilter.init();
+
+            mBeautyFilter.onOutputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
+            mBeautyFilter.onInputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
+            if (mBeautyFilter instanceof MagicBaseGroupFilter) {
+                ((MagicBaseGroupFilter) mBeautyFilter).setViewportParam(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
+            }
         }
 
         mTextureId = OpenGlUtils.getExternalOESTextureID();//mFullFrameBlit.createTextureObject();
@@ -370,23 +421,39 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         if (!use_camera_inputer) {
             mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
         } else {
-//            mCameraInputFilter.setTextureTransformMatrix(mTmpMatrix);
             if (mUseBeauty) {
-                mBeautyFilter.onDraw(mTextureId);
+                if (mBeautyFilter instanceof  MagicBaseGroupFilter) {
+                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
+                } else {
+                    mBeautyFilter.onDraw(mTextureId);
+                }
             } else {
+                ((MagicCameraInputFilter) mCameraInputFilter).setTextureTransformMatrix(mTmpMatrix);
                 mCameraInputFilter.onDraw(mTextureId);
             }
         }
 
         drawExtra(mFrameNum, viewWidth, viewHeight);
+//        mDisplaySurface.setPresentationTime(mCameraTexture.getTimestamp());
+        Timber.v("mDisplaySurface before swapBuffers");
         mDisplaySurface.swapBuffers();
+        Timber.v("mDisplaySurface after swapBuffers");
+
+        if (mReadPixel) {
+            MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
+//        MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
+        }
 
 
-//        MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
-        MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
+        int frameNum = (mFrameNum++) % 10;
 
+        if (frameNum == 0) {
+            mFpsStartTs = System.nanoTime() / 1000000;
+        } else if (frameNum == 9) {
+            long intevalMs = ((System.nanoTime() / 1000000 - mFpsStartTs) / 10);
 
-        mFrameNum++;
+            mTvFps.setText(String.format("fps: %d", 1000 / intevalMs));
+        }
     }
 
     /**
