@@ -31,7 +31,6 @@ import android.view.View;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
-import android.widget.TextView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.FullFrameRect;
@@ -42,6 +41,9 @@ import com.android.grafika.kikyo.MyUtil;
 import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
+
+import filter.base.MagicCameraInputFilter;
+import utils.OpenGlUtils;
 
 /**
  * Demonstrates capturing video into a ring buffer.  When the "capture" button is clicked,
@@ -76,11 +78,12 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
 
     private MainHandler mHandler;
-    private float mSecondsOfVideo;
 
     private ImageView mIvDump;
     private CheckBox mCbOutput2Image;
     private boolean mOutput2Image;
+
+    private MagicCameraInputFilter mCameraInputFilter;
 
 
     /**
@@ -89,28 +92,14 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
      * Used to handle camera preview "frame available" notifications, and implement the
      * blinking "recording" text.  Receives callback messages from the encoder thread.
      */
-    private static class MainHandler extends Handler implements CircularEncoder.Callback {
+    private static class MainHandler extends Handler {
         public static final int MSG_FRAME_AVAILABLE = 1;
         public static final int MSG_FILE_SAVE_COMPLETE = 2;
-        public static final int MSG_BUFFER_STATUS = 3;
 
         private WeakReference<ContinuousCaptureActivity2> mWeakActivity;
 
         public MainHandler(ContinuousCaptureActivity2 activity) {
             mWeakActivity = new WeakReference<ContinuousCaptureActivity2>(activity);
-        }
-
-        // CircularEncoder.Callback, called on encoder thread
-        @Override
-        public void fileSaveComplete(int status) {
-            sendMessage(obtainMessage(MSG_FILE_SAVE_COMPLETE, status, 0, null));
-        }
-
-        // CircularEncoder.Callback, called on encoder thread
-        @Override
-        public void bufferStatus(long totalTimeMsec) {
-            sendMessage(obtainMessage(MSG_BUFFER_STATUS,
-                    (int) (totalTimeMsec >> 32), (int) totalTimeMsec));
         }
 
 
@@ -128,12 +117,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
                     break;
                 }
                 case MSG_FILE_SAVE_COMPLETE: {
-                    break;
-                }
-                case MSG_BUFFER_STATUS: {
-                    long duration = (((long) msg.arg1) << 32) |
-                            (((long) msg.arg2) & 0xffffffffL);
-                    activity.updateBufferStatus(duration);
                     break;
                 }
                 default:
@@ -163,9 +146,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         });
 
         mHandler = new MainHandler(this);
-
-        mSecondsOfVideo = 0.0f;
-        updateControls();
     }
 
     @Override
@@ -274,15 +254,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     }
 
     /**
-     * Updates the current state of the controls.
-     */
-    private void updateControls() {
-        String str = getString(R.string.secondsOfVideo, mSecondsOfVideo);
-        TextView tv = (TextView) findViewById(R.id.capturedVideoDesc_text);
-        tv.setText(str);
-    }
-
-    /**
      * Handles onClick for "capture" button.
      */
     public void clickCapture(@SuppressWarnings("unused") View unused) {
@@ -290,14 +261,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     }
 
 
-    /**
-     * Updates the buffer status UI.
-     */
-    private void updateBufferStatus(long durationUsec) {
-        mSecondsOfVideo = durationUsec / 1000000.0f;
-        updateControls();
-    }
-
+    public static final boolean use_camera_inputer = true;
 
     @Override   // SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
@@ -310,13 +274,23 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         //
         // The display surface that we use for the SurfaceView, and the encoder surface we
         // use for video, use the same EGL context.
-        mEglCore = new EglCore(null, EglCore.FLAG_RECORDABLE);
+        mEglCore = new EglCore(null, EglCore.FLAG_TRY_GLES3);
         mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
         mDisplaySurface.makeCurrent();
 
-        mFullFrameBlit = new FullFrameRect(
-                new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
-        mTextureId = mFullFrameBlit.createTextureObject();
+
+
+        if (!use_camera_inputer) {
+            mFullFrameBlit = new FullFrameRect(
+                    new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
+        } else {
+            mCameraInputFilter = new MagicCameraInputFilter();
+            mCameraInputFilter.init();
+        }
+
+        mTextureId = OpenGlUtils.getExternalOESTextureID();//mFullFrameBlit.createTextureObject();
+
+
         mCameraTexture = new SurfaceTexture(mTextureId);
         mCameraTexture.setOnFrameAvailableListener(this);
 
@@ -331,8 +305,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         // TODO: adjust bit rate based on frame rate?
         // TODO: adjust video width/height based on what we're getting from the camera preview?
         //       (can we guarantee that camera preview size is compatible with AVC video encoder?)
-
-        updateControls();
     }
 
     @Override   // SurfaceHolder.Callback
@@ -380,7 +352,14 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         int viewWidth = sv.getWidth();
         int viewHeight = sv.getHeight();
         GLES20.glViewport(0, 0, viewWidth, viewHeight);
-        mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
+
+        if (!use_camera_inputer) {
+            mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
+        } else {
+            mCameraInputFilter.setTextureTransformMatrix(mTmpMatrix);
+            mCameraInputFilter.onDrawFrame(mTextureId);
+        }
+
         drawExtra(mFrameNum, viewWidth, viewHeight);
         mDisplaySurface.swapBuffers();
 

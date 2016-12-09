@@ -21,8 +21,11 @@ float hardLight(float color)
 }
 
 void main(){
+//     gl_FragColor = texture2D(inputImageTexture, textureCoordinate);
+//     return;
 
     vec3 centralColor = texture2D(inputImageTexture, textureCoordinate).rgb;
+
     if(params != 0.0){
 
         blurCoordinates[0] = textureCoordinate.xy + singleStepOffset * vec2(0.0, -10.0);
