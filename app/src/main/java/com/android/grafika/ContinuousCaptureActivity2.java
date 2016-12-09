@@ -42,7 +42,9 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 
+import filter.MySmoothFilter;
 import filter.base.MagicCameraInputFilter;
+import filter.base.gpuimage.MyGPUImageFilter;
 import utils.OpenGlUtils;
 
 /**
@@ -60,6 +62,8 @@ import utils.OpenGlUtils;
 public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolder.Callback,
         SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = MainActivity.TAG;
+
+    public static final boolean use_camera_inputer = false;
 
     private static final int VIDEO_WIDTH = 1280;  // dimensions for 720p video
     private static final int VIDEO_HEIGHT = 720;
@@ -80,10 +84,11 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private MainHandler mHandler;
 
     private ImageView mIvDump;
-    private CheckBox mCbOutput2Image;
-    private boolean mOutput2Image;
+    private CheckBox mCbOutput2Image, mCbUseBeauty;
+    private boolean mOutput2Image, mUseBeauty;
 
-    private MagicCameraInputFilter mCameraInputFilter;
+    private MyGPUImageFilter mCameraInputFilter;
+    private MyGPUImageFilter mBeautyFilter;
 
 
     /**
@@ -144,6 +149,15 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
                 mIvDump.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             }
         });
+
+        mCbUseBeauty = (CheckBox) findViewById(R.id.mCbUseBeauty);
+        mCbUseBeauty.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mUseBeauty = isChecked;
+            }
+        });
+
 
         mHandler = new MainHandler(this);
     }
@@ -261,8 +275,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     }
 
 
-    public static final boolean use_camera_inputer = true;
-
     @Override   // SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "surfaceCreated holder=" + holder);
@@ -279,13 +291,15 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mDisplaySurface.makeCurrent();
 
 
-
         if (!use_camera_inputer) {
             mFullFrameBlit = new FullFrameRect(
                     new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
         } else {
             mCameraInputFilter = new MagicCameraInputFilter();
             mCameraInputFilter.init();
+
+            mBeautyFilter = new MySmoothFilter();
+            mBeautyFilter.init();
         }
 
         mTextureId = OpenGlUtils.getExternalOESTextureID();//mFullFrameBlit.createTextureObject();
@@ -356,16 +370,20 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         if (!use_camera_inputer) {
             mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
         } else {
-            mCameraInputFilter.setTextureTransformMatrix(mTmpMatrix);
-            mCameraInputFilter.onDrawFrame(mTextureId);
+//            mCameraInputFilter.setTextureTransformMatrix(mTmpMatrix);
+            if (mUseBeauty) {
+                mBeautyFilter.onDraw(mTextureId);
+            } else {
+                mCameraInputFilter.onDraw(mTextureId);
+            }
         }
 
         drawExtra(mFrameNum, viewWidth, viewHeight);
         mDisplaySurface.swapBuffers();
 
 
-        MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
-//        MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
+//        MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
+        MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
 
 
         mFrameNum++;

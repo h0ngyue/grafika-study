@@ -18,21 +18,18 @@ public class MagicSketchFilter extends MyGPUImageFilter {
 		super(NO_FILTER_VERTEX_SHADER, OpenGlUtils.readShaderFromRawResource(R.raw.sketch));
 	}
 	
-	protected void onInit() {
+	public void onInit() {
         super.onInit();
         mSingleStepOffsetLocation = GLES20.glGetUniformLocation(getProgram(), "singleStepOffset");
         mStrengthLocation = GLES20.glGetUniformLocation(getProgram(), "strength");
     }
     
-    protected void onDestroy() {
-        super.onDestroy();
-    }
-    
+
     private void setTexelSize(final float w, final float h) {
 		setFloatVec2(mSingleStepOffsetLocation, new float[] {1.0f / w, 1.0f / h});
 	}
 
-    protected void onInitialized(){
+    public void onInitialized(){
         super.onInitialized();
         setFloat(mStrengthLocation, 0.5f);
     }

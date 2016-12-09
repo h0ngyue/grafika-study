@@ -31,7 +31,7 @@ public class MagicCameraInputFilter extends MyGPUImageFilter {
 //                NO_FILTER_FRAGMENT_SHADER);
     }
 
-    protected void onInit() {
+    public void onInit() {
         super.onInit();
         mTextureTransformMatrixLocation = GLES20.glGetUniformLocation(mGLProgId, "textureTransform");
         mSingleStepOffsetLocation = GLES20.glGetUniformLocation(getProgram(), "singleStepOffset");
@@ -44,7 +44,7 @@ public class MagicCameraInputFilter extends MyGPUImageFilter {
     }
 
     @Override
-    public int onDrawFrame(int textureId) {
+    public int onDraw(int textureId) {
         GLES20.glUseProgram(mGLProgId);
         runPendingOnDrawTasks();
         if(!isInitialized()) {
@@ -72,11 +72,12 @@ public class MagicCameraInputFilter extends MyGPUImageFilter {
     }
 
     @Override
-    public int onDrawFrame(int textureId, FloatBuffer vertexBuffer, FloatBuffer textureBuffer) {
+    public void onDraw(int textureId, FloatBuffer vertexBuffer, FloatBuffer textureBuffer) {
         GLES20.glUseProgram(mGLProgId);
         runPendingOnDrawTasks();
         if(!isInitialized()) {
-            return OpenGlUtils.NOT_INIT;
+//            return OpenGlUtils.NOT_INIT;
+            return;
         }
         vertexBuffer.position(0);
         GLES20.glVertexAttribPointer(mGLAttribPosition, 2, GLES20.GL_FLOAT, false, 0, vertexBuffer);
@@ -96,7 +97,7 @@ public class MagicCameraInputFilter extends MyGPUImageFilter {
         GLES20.glDisableVertexAttribArray(mGLAttribPosition);
         GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
         GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
-        return OpenGlUtils.ON_DRAWN;
+        return;
     }
 
     public int onDrawToTexture(final int textureId) {
@@ -211,7 +212,7 @@ public class MagicCameraInputFilter extends MyGPUImageFilter {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
         destroyFramebuffers();
     }

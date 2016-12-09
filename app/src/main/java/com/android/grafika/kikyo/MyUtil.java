@@ -25,7 +25,9 @@ public class MyUtil {
         long tag1 = System.nanoTime() / 1000000;
 
         // Try to ensure that rendering has finished.
-//        GLES20.glFinish();
+        GLES20.glFinish();
+
+        long tag1_5 = System.nanoTime() / 1000000;
 
 //        pixelBuf.position(0);
 //        GLES20.glReadPixels(0, 0, 1, 1,
@@ -53,7 +55,7 @@ public class MyUtil {
         }
         long tag3 = System.nanoTime() / 1000000;
 
-        Log.d("MyUtil", String.format(", w:%d, h:%d,  tag1 consume:%d ms, glReadPixels consume:%d, tag2~tag3:%d, total:%d",
-                w, h, tag1 - start, tag2 - tag1, tag3 - tag2, tag3 - start));
+        Log.d("MyUtil", String.format(", w:%d, h:%d,  tag1 consume:%d ms, glReadPixels consume:%d, glFinish:%d, tag2~tag3:%d, total:%d",
+                w, h, tag1 - start, tag2 - tag1_5, tag1_5 - tag1, tag3 - tag2, tag3 - start));
     }
 }

@@ -657,7 +657,7 @@ public class TextureFromCameraActivity2 extends Activity implements SurfaceHolde
             if (myGPUImageFilter == null) {
                 return;
             }
-            myGPUImageFilter.onDisplaySizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
+            myGPUImageFilter.onOutputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
             myGPUImageFilter.onInputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
 
             gpuImageFilter.onOutputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);

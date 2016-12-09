@@ -26,6 +26,7 @@ import com.android.grafika.R;
 
 import java.nio.FloatBuffer;
 
+import filter.base.GPUImageFilter;
 import utils.OpenGlUtils;
 
 /**
@@ -152,7 +153,7 @@ public class Texture2dProgram {
             case TEXTURE_EXT:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;
                 mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, FRAGMENT_SHADER_EXT);
-//                mProgramHandle = GlUtil.createProgram(VERTEX_SHADER, OpenGlUtils.readShaderFromRawResource(R.raw.lg_smooth_frag));
+//                mProgramHandle = GlUtil.createProgram(GPUImageFilter.NO_FILTE、R_VERTEX_SHADER, OpenGlUtils.readShaderFromRawResource(R.raw.lg_smooth_frag));
                 break;
             case TEXTURE_EXT_BW:
                 mTextureTarget = GLES11Ext.GL_TEXTURE_EXTERNAL_OES;

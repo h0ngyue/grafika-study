@@ -53,13 +53,13 @@ public class MagicLookupFilter extends MyGPUImageFilter {
     
     public int mLookupTextureUniform;
     public int mLookupSourceTexture = OpenGlUtils.NO_TEXTURE;
-    
-    protected void onInit(){
+
+	public void onInit(){
 		super.onInit();
 		mLookupTextureUniform = GLES20.glGetUniformLocation(getProgram(), "inputImageTexture2");
     }
-    
-    protected void onInitialized(){
+
+	public void onInitialized(){
 		super.onInitialized();
     	runOnDraw(new Runnable(){
     		public void run(){
@@ -67,8 +67,8 @@ public class MagicLookupFilter extends MyGPUImageFilter {
     		}
     	});
     }
-    
-    protected void onDestroy(){
+
+	public void onDestroy(){
 		super.onDestroy();
 	    int[] texture = new int[]{mLookupSourceTexture};
 	    GLES20.glDeleteTextures(1, texture, 0);

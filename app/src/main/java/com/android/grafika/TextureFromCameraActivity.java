@@ -636,7 +636,7 @@ public class TextureFromCameraActivity extends Activity implements SurfaceHolder
             if (filter == null) {
                 return;
             }
-            filter.onDisplaySizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
+            filter.onOutputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
             filter.onInputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
         }
 

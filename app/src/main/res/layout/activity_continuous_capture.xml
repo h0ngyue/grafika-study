@@ -61,8 +61,17 @@
         android:padding="30dp"
         android:paddingTop="60dp"
         android:id="@+id/mCbOutput2Image"
-        android:text="dump 2 image"
+        android:text="dumpImage"
         android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+    <CheckBox
+        android:padding="30dp"
+        android:paddingTop="60dp"
+        android:layout_toLeftOf="@id/mCbOutput2Image"
+        android:id="@+id/mCbUseBeauty"
+        android:text="Beauty"
         android:layout_alignParentBottom="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content" />
