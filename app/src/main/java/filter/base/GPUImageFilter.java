@@ -25,7 +25,7 @@ import java.io.InputStream;
 import java.nio.FloatBuffer;
 import java.util.LinkedList;
 
-import utils.OpenGlUtils;
+import filter.utils.OpenGlUtils;
 
 public class GPUImageFilter {
     public static final String NO_FILTER_VERTEX_SHADER = "" +

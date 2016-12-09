@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import filter.base.gpuimage.MyGPUImageFilter;
 import filter.utils.OpenGlUtils;
 import filter.utils.Rotation;
 import filter.utils.TextureRotationUtil;

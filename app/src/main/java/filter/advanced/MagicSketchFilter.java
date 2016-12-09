@@ -4,8 +4,8 @@ import android.opengl.GLES20;
 
 import com.android.grafika.R;
 
-import filter.base.gpuimage.MyGPUImageFilter;
-import utils.OpenGlUtils;
+import filter.MyGPUImageFilter;
+import filter.utils.OpenGlUtils;
 
 
 public class MagicSketchFilter extends MyGPUImageFilter {

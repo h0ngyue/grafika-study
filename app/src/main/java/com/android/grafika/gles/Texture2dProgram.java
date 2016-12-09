@@ -27,7 +27,6 @@ import com.android.grafika.R;
 import java.nio.FloatBuffer;
 
 import filter.base.GPUImageFilter;
-import utils.OpenGlUtils;
 
 /**
  * GL program and supporting functions for textured 2D shapes.

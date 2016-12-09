@@ -18,6 +18,8 @@ package filter.base.gpuimage;
 
 import android.opengl.GLES20;
 
+import filter.MyGPUImageFilter;
+
 /**
  * Changes the contrast of the image.<br>
  * <br>

@@ -18,6 +18,8 @@ package filter.base.gpuimage;
 
 import android.opengl.GLES20;
 
+import filter.MyGPUImageFilter;
+
 public class GPUImageHueFilter extends MyGPUImageFilter {
     public static final String HUE_FRAGMENT_SHADER = "" +
             "precision highp float;\n" +

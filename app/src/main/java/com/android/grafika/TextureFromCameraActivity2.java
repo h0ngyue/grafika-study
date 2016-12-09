@@ -50,12 +50,10 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.advanced.MagicSketchFilter;
-import filter.base.GPUImageFilter;
 import filter.base.MagicCameraInputFilter;
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
+import filter.utils.TextureRotationUtil;
 import utils.MagicParams;
-import utils.OpenGlUtils;
-import utils.TextureRotationUtil;
 
 /**
  * Direct the Camera preview to a GLES texture and manipulate it.
@@ -636,10 +634,6 @@ public class TextureFromCameraActivity2 extends Activity implements SurfaceHolde
             myGPUImageFilter = new MagicSketchFilter();
             myGPUImageFilter.init();
 
-            gpuImageFilter = new GPUImageFilter();
-            gpuImageFilter.init();
-
-
             gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
                     .order(ByteOrder.nativeOrder())
                     .asFloatBuffer();
@@ -660,7 +654,6 @@ public class TextureFromCameraActivity2 extends Activity implements SurfaceHolde
             myGPUImageFilter.onOutputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
             myGPUImageFilter.onInputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
 
-            gpuImageFilter.onOutputSizeChanged(mWindowSurfaceWidth, mWindowSurfaceHeight);
         }
 
         /**
@@ -674,7 +667,6 @@ public class TextureFromCameraActivity2 extends Activity implements SurfaceHolde
         }
 
         private MyGPUImageFilter myGPUImageFilter;
-        private GPUImageFilter gpuImageFilter;
         private int mTxtId;
         private MagicCameraInputFilter inputFilter;
         private FloatBuffer gLCubeBuffer;

@@ -6,7 +6,8 @@ import android.opengl.GLES20;
 
 import com.android.grafika.R;
 
-import utils.OpenGlUtils;
+import filter.utils.OpenGlUtils;
+
 
 /**
  * Created by shuailongcheng on 06/12/2016.

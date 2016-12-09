@@ -41,9 +41,9 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.advanced.MagicSketchFilter;
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
+import filter.utils.TextureRotationUtil;
 import timber.log.Timber;
-import utils.TextureRotationUtil;
 
 /**
  * Encode a movie from frames rendered from an external texture image.

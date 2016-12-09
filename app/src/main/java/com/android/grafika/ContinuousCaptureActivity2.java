@@ -48,13 +48,11 @@ import java.nio.FloatBuffer;
 
 import filter.MagicBaseGroupFilter;
 import filter.MyBeautyFilter;
-import filter.MyRGBMapFilter;
-import filter.MySmoothFilter;
 import filter.base.MagicCameraInputFilter;
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
+import filter.utils.OpenGlUtils;
 import filter.utils.TextureRotationUtil;
 import timber.log.Timber;
-import utils.OpenGlUtils;
 
 /**
  * Demonstrates capturing video into a ring buffer.  When the "capture" button is clicked,
@@ -100,8 +98,8 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
     private MyGPUImageFilter mCameraInputFilter = new MagicCameraInputFilter();
 
-    //    private MyGPUImageFilter mBeautyFilter = new MyBeautyFilter();
-    private MyGPUImageFilter mBeautyFilter = new MySmoothFilter();
+        private MyGPUImageFilter mBeautyFilter = new MyBeautyFilter();
+//    private MyGPUImageFilter mBeautyFilter = new MySmoothFilter();
 //    private MyGPUImageFilter mBeautyFilter = new MyRGBMapFilter();
 
     private TextView mTvFps;

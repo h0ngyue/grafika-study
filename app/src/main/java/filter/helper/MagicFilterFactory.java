@@ -2,7 +2,7 @@ package filter.helper;
 
 
 import filter.advanced.MagicSketchFilter;
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
 
 public class MagicFilterFactory{
 	

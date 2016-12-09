@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package filter.base.gpuimage;
+package filter;
 
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
@@ -26,9 +26,9 @@ import java.nio.FloatBuffer;
 import javax.microedition.khronos.opengles.GL11Ext;
 
 import filter.base.GPUImageFilter;
-import utils.OpenGlUtils;
-import utils.Rotation;
-import utils.TextureRotationUtil;
+import filter.utils.OpenGlUtils;
+import filter.utils.Rotation;
+import filter.utils.TextureRotationUtil;
 
 public class MyGPUImageFilter extends GPUImageFilter {
 
@@ -89,6 +89,7 @@ public class MyGPUImageFilter extends GPUImageFilter {
         GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
         onDrawArraysAfter();
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+//        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
 //        return OpenGlUtils.ON_DRAWN;
 
     }
@@ -132,6 +133,7 @@ public class MyGPUImageFilter extends GPUImageFilter {
 		GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
 		onDrawArraysAfter();
 		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
+//        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
 		return OpenGlUtils.ON_DRAWN;
 	}
 

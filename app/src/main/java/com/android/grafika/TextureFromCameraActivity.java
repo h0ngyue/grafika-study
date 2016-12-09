@@ -50,9 +50,9 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.advanced.MagicSketchFilter;
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
+import filter.utils.TextureRotationUtil;
 import utils.MagicParams;
-import utils.TextureRotationUtil;
 
 /**
  * Direct the Camera preview to a GLES texture and manipulate it.

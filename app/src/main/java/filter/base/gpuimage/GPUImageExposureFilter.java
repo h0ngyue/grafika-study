@@ -18,6 +18,8 @@ package filter.base.gpuimage;
 
 import android.opengl.GLES20;
 
+import filter.MyGPUImageFilter;
+
 /**
  * exposure: The adjusted exposure (-10.0 - 10.0, with 0.0 as the default)
  */

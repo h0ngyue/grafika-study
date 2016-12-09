@@ -8,9 +8,9 @@ import com.android.grafika.R;
 
 import java.nio.FloatBuffer;
 
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
+import filter.utils.OpenGlUtils;
 import utils.MagicParams;
-import utils.OpenGlUtils;
 
 public class MagicCameraInputFilter extends MyGPUImageFilter {
 

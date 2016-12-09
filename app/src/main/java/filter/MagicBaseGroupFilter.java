@@ -6,8 +6,6 @@ import android.opengl.GLES20;
 import java.nio.FloatBuffer;
 import java.util.List;
 
-import filter.base.gpuimage.MyGPUImageFilter;
-
 public class MagicBaseGroupFilter extends MyGPUImageFilter {
     protected static int[] frameBuffers = null;
     protected static int[] frameBufferTextures = null;

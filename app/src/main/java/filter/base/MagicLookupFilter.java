@@ -2,9 +2,9 @@ package filter.base;
 
 import android.opengl.GLES20;
 
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
+import filter.utils.OpenGlUtils;
 import utils.MagicParams;
-import utils.OpenGlUtils;
 
 
 public class MagicLookupFilter extends MyGPUImageFilter {

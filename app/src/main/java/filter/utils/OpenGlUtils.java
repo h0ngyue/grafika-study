@@ -24,7 +24,7 @@ import javax.microedition.khronos.egl.EGLDisplay;
 import javax.microedition.khronos.opengles.GL10;
 
 import filter.BeautyCamera;
-import filter.base.gpuimage.MyGPUImageFilter;
+import filter.MyGPUImageFilter;
 import timber.log.Timber;
 
 public class OpenGlUtils {

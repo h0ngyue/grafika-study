@@ -1,6 +1,11 @@
+#extension GL_OES_EGL_image_external : require
+precision mediump float;
+
+uniform samplerExternalOES inputImageTexture;
+
 varying highp vec2 textureCoordinate;
 varying highp vec2 textureCoordinate2;
-uniform sampler2D inputImageTexture;
+//uniform sampler2D inputImageTexture;
 uniform sampler2D inputImageTexture2;
 //uniform int mLevel;
 void main()
