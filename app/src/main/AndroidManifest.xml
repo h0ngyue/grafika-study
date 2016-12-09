@@ -94,6 +94,10 @@
             android:label="@string/title_activity_continuous_capture" >
         </activity>
         <activity
+            android:name="com.android.grafika.ContinuousCaptureActivity2"
+            android:label="@string/title_activity_continuous_capture" >
+        </activity>
+        <activity
             android:name="com.android.grafika.SoftInputSurfaceActivity"
             android:label="@string/title_activity_soft_input_surface" >
         </activity>

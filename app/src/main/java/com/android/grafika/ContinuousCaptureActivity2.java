@@ -58,7 +58,7 @@ import java.lang.ref.WeakReference;
  * through our Handler.  That causes us to render the new frame to the display and to
  * our video encoder.
  */
-public class ContinuousCaptureActivity extends Activity implements SurfaceHolder.Callback,
+public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolder.Callback,
         SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = MainActivity.TAG;
 
@@ -103,10 +103,10 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         public static final int MSG_FILE_SAVE_COMPLETE = 2;
         public static final int MSG_BUFFER_STATUS = 3;
 
-        private WeakReference<ContinuousCaptureActivity> mWeakActivity;
+        private WeakReference<ContinuousCaptureActivity2> mWeakActivity;
 
-        public MainHandler(ContinuousCaptureActivity activity) {
-            mWeakActivity = new WeakReference<ContinuousCaptureActivity>(activity);
+        public MainHandler(ContinuousCaptureActivity2 activity) {
+            mWeakActivity = new WeakReference<ContinuousCaptureActivity2>(activity);
         }
 
         // CircularEncoder.Callback, called on encoder thread
@@ -125,7 +125,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
 
         @Override
         public void handleMessage(Message msg) {
-            ContinuousCaptureActivity activity = mWeakActivity.get();
+            ContinuousCaptureActivity2 activity = mWeakActivity.get();
             if (activity == null) {
                 Log.d(TAG, "Got message for dead activity");
                 return;

@@ -36,6 +36,7 @@ import android.widget.TextView;
 
 import com.android.grafika.gles.Drawable2d;
 import com.android.grafika.gles.EglCore;
+import com.android.grafika.gles.FullFrameRect;
 import com.android.grafika.gles.GlUtil;
 import com.android.grafika.gles.Sprite2d;
 import com.android.grafika.gles.Texture2dProgram;
@@ -474,6 +475,7 @@ public class TextureFromCameraActivity2 extends Activity implements SurfaceHolde
         private final ScaledDrawable2d mRectDrawable =
                 new ScaledDrawable2d(Drawable2d.Prefab.RECTANGLE);
         private final Sprite2d mRect = new Sprite2d(mRectDrawable);
+        private FullFrameRect mFullScreen;
 
         private int mZoomPercent = DEFAULT_ZOOM_PERCENT;
         private int mSizePercent = DEFAULT_SIZE_PERCENT;
@@ -561,9 +563,13 @@ public class TextureFromCameraActivity2 extends Activity implements SurfaceHolde
             // camera.  We set the textured rect's program to render from it.
 
             mTexProgram = new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT);
-            int textureId = OpenGlUtils.getExternalOESTextureID();//mTexProgram.createTextureObject();
+            int textureId = mTexProgram.createTextureObject();
             mCameraTexture = new SurfaceTexture(textureId);
             mRect.setTexture(textureId);
+
+//            mTexProgram = new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT);
+//            mFullScreen = new FullFrameRect(mTexProgram);
+//            int textureId = mFullScreen.createTextureObject();
 
 //            mTxtId = textureId;
 //            inputFilter = new MagicCameraInputFilter();

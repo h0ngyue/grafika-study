@@ -54,4 +54,19 @@
         android:textColor="#f00"
         android:textAppearance="?android:attr/textAppearanceLarge" />
 
+    <ImageView
+        android:id="@id/mIvDump"
+        android:layout_alignParentBottom="true"
+        android:layout_width="210dp"
+        android:layout_height="280dp" />
+
+
+    <CheckBox
+        android:id="@+id/mCbOutput2Image"
+        android:text="dump 2 image"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentBottom="true"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content" />
+
 </RelativeLayout>

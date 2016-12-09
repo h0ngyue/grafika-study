@@ -60,7 +60,7 @@ public class MainActivity extends ListActivity {
                     "PlayMovieActivity"},
             {"Continuous capture",
                     "Records camera continuously, saves a snapshot when requested",
-                    "ContinuousCaptureActivity"},
+                    "ContinuousCaptureActivity2"},
             {"Double decode",
                     "Decodes two videos side-by-side",
                     "DoubleDecodeActivity"},
