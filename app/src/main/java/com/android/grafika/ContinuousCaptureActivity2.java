@@ -28,16 +28,13 @@ import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
-import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.FullFrameRect;
-import com.android.grafika.gles.OffscreenSurface;
 import com.android.grafika.gles.Texture2dProgram;
 import com.android.grafika.gles.WindowSurface;
 import com.android.grafika.kikyo.MyUtil;
@@ -77,10 +74,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private Camera mCamera;
     private int mCameraPreviewThousandFps;
 
-    private File mOutputFile;
-    private CircularEncoder mCircEncoder;
-    private WindowSurface mEncoderSurface;
-    private boolean mFileSaveInProgress;
 
     private MainHandler mHandler;
     private float mSecondsOfVideo;
@@ -89,7 +82,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private CheckBox mCbOutput2Image;
     private boolean mOutput2Image;
 
-    OffscreenSurface mOffscreenSurface;
 
     /**
      * Custom message handler for main UI thread.
@@ -98,7 +90,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
      * blinking "recording" text.  Receives callback messages from the encoder thread.
      */
     private static class MainHandler extends Handler implements CircularEncoder.Callback {
-        public static final int MSG_BLINK_TEXT = 0;
         public static final int MSG_FRAME_AVAILABLE = 1;
         public static final int MSG_FILE_SAVE_COMPLETE = 2;
         public static final int MSG_BUFFER_STATUS = 3;
@@ -132,29 +123,11 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             }
 
             switch (msg.what) {
-                case MSG_BLINK_TEXT: {
-                    TextView tv = (TextView) activity.findViewById(R.id.recording_text);
-
-                    // Attempting to make it blink by using setEnabled() doesn't work --
-                    // it just changes the color.  We want to change the visibility.
-                    int visibility = tv.getVisibility();
-                    if (visibility == View.VISIBLE) {
-                        visibility = View.INVISIBLE;
-                    } else {
-                        visibility = View.VISIBLE;
-                    }
-                    tv.setVisibility(visibility);
-
-                    int delay = (visibility == View.VISIBLE) ? 1000 : 200;
-                    sendEmptyMessageDelayed(MSG_BLINK_TEXT, delay);
-                    break;
-                }
                 case MSG_FRAME_AVAILABLE: {
                     activity.drawFrame();
                     break;
                 }
                 case MSG_FILE_SAVE_COMPLETE: {
-                    activity.fileSaveComplete(msg.arg1);
                     break;
                 }
                 case MSG_BUFFER_STATUS: {
@@ -185,13 +158,12 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 mOutput2Image = isChecked;
+                mIvDump.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             }
         });
 
         mHandler = new MainHandler(this);
-        mHandler.sendEmptyMessageDelayed(MainHandler.MSG_BLINK_TEXT, 1500);
 
-        mOutputFile = new File(getFilesDir(), "continuous-capture.mp4");
         mSecondsOfVideo = 0.0f;
         updateControls();
     }
@@ -217,10 +189,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
         releaseCamera();
 
-        if (mCircEncoder != null) {
-            mCircEncoder.shutdown();
-            mCircEncoder = null;
-        }
         if (mCameraTexture != null) {
             mCameraTexture.release();
             mCameraTexture = null;
@@ -228,10 +196,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         if (mDisplaySurface != null) {
             mDisplaySurface.release();
             mDisplaySurface = null;
-        }
-        if (mOffscreenSurface != null) {
-            mOffscreenSurface.release();
-            mOffscreenSurface = null;
         }
 
         if (mFullFrameBlit != null) {
@@ -316,13 +280,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         String str = getString(R.string.secondsOfVideo, mSecondsOfVideo);
         TextView tv = (TextView) findViewById(R.id.capturedVideoDesc_text);
         tv.setText(str);
-
-        boolean wantEnabled = (mCircEncoder != null) && !mFileSaveInProgress;
-        Button button = (Button) findViewById(R.id.capture_button);
-        if (button.isEnabled() != wantEnabled) {
-            Log.d(TAG, "setting enabled = " + wantEnabled);
-            button.setEnabled(wantEnabled);
-        }
     }
 
     /**
@@ -330,45 +287,8 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
      */
     public void clickCapture(@SuppressWarnings("unused") View unused) {
         Log.d(TAG, "capture");
-        if (mFileSaveInProgress) {
-            Log.w(TAG, "HEY: file save is already in progress");
-            return;
-        }
-
-        // The button is disabled in onCreate(), and not enabled until the encoder and output
-        // surface is ready, so it shouldn't be possible to get here with a null mCircEncoder.
-        mFileSaveInProgress = true;
-        updateControls();
-        TextView tv = (TextView) findViewById(R.id.recording_text);
-        String str = getString(R.string.nowSaving);
-        tv.setText(str);
-
-
-        mCircEncoder.saveVideo(mOutputFile);
     }
 
-    /**
-     * The file save has completed.  We can resume recording.
-     */
-    private void fileSaveComplete(int status) {
-        Log.d(TAG, "fileSaveComplete " + status);
-        if (!mFileSaveInProgress) {
-            throw new RuntimeException("WEIRD: got fileSaveCmplete when not in progress");
-        }
-        mFileSaveInProgress = false;
-        updateControls();
-        TextView tv = (TextView) findViewById(R.id.recording_text);
-        String str = getString(R.string.nowRecording);
-        tv.setText(str);
-
-        if (status == 0) {
-            str = getString(R.string.recordingSucceeded);
-        } else {
-            str = getString(R.string.recordingFailed, status);
-        }
-        Toast toast = Toast.makeText(this, str, Toast.LENGTH_SHORT);
-        toast.show();
-    }
 
     /**
      * Updates the buffer status UI.
@@ -411,15 +331,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         // TODO: adjust bit rate based on frame rate?
         // TODO: adjust video width/height based on what we're getting from the camera preview?
         //       (can we guarantee that camera preview size is compatible with AVC video encoder?)
-        try {
-            mCircEncoder = new CircularEncoder(VIDEO_WIDTH, VIDEO_HEIGHT, 6000000,
-                    mCameraPreviewThousandFps / 1000, 7, mHandler);
-        } catch (IOException ioe) {
-            throw new RuntimeException(ioe);
-        }
-        mEncoderSurface = new WindowSurface(mEglCore, mCircEncoder.getInputSurface(), true);
-
-        mOffscreenSurface = new OffscreenSurface(mEglCore, VIDEO_WIDTH, VIDEO_HEIGHT);
 
         updateControls();
     }
@@ -475,22 +386,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
 
         MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
-        // Send it to the video encoder.
-//        if (!mFileSaveInProgress) {
-////            mEncoderSurface.makeCurrent();
-//            mOffscreenSurface.makeCurrent();
-//            GLES20.glViewport(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-//            mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
-//            drawExtra(mFrameNum, VIDEO_WIDTH, VIDEO_HEIGHT);
-//            mCircEncoder.frameAvailableSoon();
-////            mEncoderSurface.setPresentationTime(mCameraTexture.getTimestamp());
-////            mEncoderSurface.swapBuffers();
-//            mOffscreenSurface.setPresentationTime(mCameraTexture.getTimestamp());
-//            mOffscreenSurface.swapBuffers();
-//
-//            MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
-//        }
-
+//        MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
 
 
         mFrameNum++;

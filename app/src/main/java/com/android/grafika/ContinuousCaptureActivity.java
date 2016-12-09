@@ -390,7 +390,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         //
         // The display surface that we use for the SurfaceView, and the encoder surface we
         // use for video, use the same EGL context.
-        mEglCore = new EglCore(null, EglCore.FLAG_RECORDABLE);
+        mEglCore = new EglCore(null,/* EglCore.FLAG_RECORDABLE*/0);
         mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
         mDisplaySurface.makeCurrent();
 
@@ -474,22 +474,21 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         mDisplaySurface.swapBuffers();
 
 
-        MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
+//        MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
         // Send it to the video encoder.
-//        if (!mFileSaveInProgress) {
-////            mEncoderSurface.makeCurrent();
+        if (!mFileSaveInProgress) {
 //            mOffscreenSurface.makeCurrent();
-//            GLES20.glViewport(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-//            mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
-//            drawExtra(mFrameNum, VIDEO_WIDTH, VIDEO_HEIGHT);
-//            mCircEncoder.frameAvailableSoon();
-////            mEncoderSurface.setPresentationTime(mCameraTexture.getTimestamp());
-////            mEncoderSurface.swapBuffers();
-//            mOffscreenSurface.setPresentationTime(mCameraTexture.getTimestamp());
-//            mOffscreenSurface.swapBuffers();
-//
-//            MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
-//        }
+
+            mEncoderSurface.makeCurrent();
+            GLES20.glViewport(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
+            mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
+            drawExtra(mFrameNum, VIDEO_WIDTH, VIDEO_HEIGHT);
+            mCircEncoder.frameAvailableSoon();
+            mEncoderSurface.setPresentationTime(mCameraTexture.getTimestamp());
+            mEncoderSurface.swapBuffers();
+
+            MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
+        }
 
 
 
