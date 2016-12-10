@@ -96,6 +96,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
     private ImageView mIvDump;
     private CheckBox mCbOutput2Image, mCbUseBeauty, mCbReadPixel;
+    private CheckBox mCbPreReadPixel;
     private boolean mOutput2Image, mUseBeauty, mReadPixel;
 
     private TextView mTvFps;
@@ -168,7 +169,18 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             }
         });
 
-        mCbUseBeauty = (CheckBox) findViewById(R.id.mCbUseBeauty);
+        mCbPreReadPixel = (CheckBox) findViewById(R.id.mCbPreReadPixel);
+        mCbPreReadPixel.setChecked(mPreReadPixel);
+        mCbPreReadPixel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+                mPreReadPixel = isChecked;
+            }
+        });
+
+
+
+                mCbUseBeauty = (CheckBox) findViewById(R.id.mCbUseBeauty);
         mCbUseBeauty.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -440,6 +452,9 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
      * If there was a pending frame available notification when we shut down, we might get
      * here after onPause().
      */
+    private boolean first = true;
+    private boolean mPreReadPixel = false;
+
     private void drawFrame() {
         Log.d(TAG, "drawFrame");
         if (mEglCore == null) {
@@ -447,8 +462,20 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             return;
         }
 
+
         // Latch the next frame from the camera.
         mDisplaySurface.makeCurrent();
+
+
+        if (first) {
+            first = false;
+        } else {
+            if (mReadPixel && mPreReadPixel) {
+//            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
+                MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
+            }
+        }
+
         mCameraTexture.updateTexImage();
         mCameraTexture.getTransformMatrix(mSTTransMatrix);
 
@@ -490,11 +517,10 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mDisplaySurface.swapBuffers();
         Timber.v("mDisplaySurface after swapBuffers");
 
-        if (mReadPixel) {
+        if (mReadPixel && !mPreReadPixel) {
 //            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
             MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
         }
-
 
         int frameNum = (mFrameNum++) % 10;
 

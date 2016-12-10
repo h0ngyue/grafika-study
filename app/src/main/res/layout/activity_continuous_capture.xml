@@ -49,6 +49,7 @@
 
 
     <LinearLayout
+        android:id="@+id/mLlBottom"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
@@ -57,31 +58,51 @@
         <CheckBox
             android:id="@+id/mCbOutput2Image"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
             android:layout_alignParentBottom="true"
             android:layout_alignParentRight="true"
-            android:paddingTop="60dp"
-            android:paddingBottom="60dp"
+            android:layout_weight="1"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
             android:text="Output2Image" />
 
         <CheckBox
             android:id="@+id/mCbUseBeauty"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:paddingTop="60dp"
-            android:paddingBottom="60dp"
+            android:layout_weight="1"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
             android:text="Beauty" />
 
         <CheckBox
             android:id="@+id/mCbReadPixel"
             android:layout_width="0dp"
-            android:layout_weight="1"
             android:layout_height="wrap_content"
-            android:paddingTop="60dp"
-            android:paddingBottom="60dp"
+            android:layout_weight="1"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
             android:text="ReadPixel" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/mLlBottom2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/mLlBottom"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/mCbPreReadPixel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="right"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
+            android:text="PreReadPixel" />
+
 
     </LinearLayout>
 
@@ -89,9 +110,9 @@
         android:id="@+id/mTvFps"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="@string/secondsOfVideo"
         android:layout_alignBaseline="@+id/capture_button"
         android:layout_alignBottom="@+id/capture_button"
-        android:layout_toEndOf="@+id/capture_button" />
+        android:layout_toEndOf="@+id/capture_button"
+        android:text="@string/secondsOfVideo" />
 
 </RelativeLayout>
