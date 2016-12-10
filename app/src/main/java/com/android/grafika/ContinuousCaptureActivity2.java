@@ -17,7 +17,6 @@
 package com.android.grafika;
 
 import android.app.Activity;
-import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
@@ -141,6 +140,33 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         }
     }
 
+    /**
+     * Handles onClick for "capture" button.
+     */
+    public void clickCapture(@SuppressWarnings("unused") View unused) {
+        SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
+        SurfaceHolder sh = sv.getHolder();
+        Timber.d("capture, sh.isCreating():%b", sh.isCreating());
+        sh.addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                Timber.d("surfaceCreated");
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+
+                Timber.d("surfaceChanged");
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+
+                Timber.d("surfaceDestroyed");
+            }
+        });
+    }
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -148,6 +174,8 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
         SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
         SurfaceHolder sh = sv.getHolder();
+
+        Timber.d("onCreate, sh.isCreating():%b", sh.isCreating());
         sh.addCallback(this);
         sh.setFixedSize(VIDEO_HEIGHT, VIDEO_WIDTH);
 //        sh.setFormat(PixelFormat.RGBA_8888);
@@ -326,13 +354,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         }
     }
 
-    /**
-     * Handles onClick for "capture" button.
-     */
-    public void clickCapture(@SuppressWarnings("unused") View unused) {
-        Log.d(TAG, "capture");
-    }
-
 
     @Override   // SurfaceHolder.Callback
     public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
@@ -383,8 +404,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
 
         mSimpleCameraInput.init();
-//            mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
-        mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
+        mSimpleCameraInput.initCameraFrameBuffer(4000, 3000);
 
         mBeautyFilter.init();
 
