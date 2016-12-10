@@ -17,6 +17,7 @@
 package com.android.grafika;
 
 import android.app.Activity;
+import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
@@ -34,8 +35,6 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.android.grafika.gles.EglCore;
-import com.android.grafika.gles.FullFrameRect;
-import com.android.grafika.gles.Texture2dProgram;
 import com.android.grafika.gles.WindowSurface;
 import com.android.grafika.kikyo.MyUtil;
 
@@ -70,8 +69,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = MainActivity.TAG;
 
-    public static final boolean use_camera_inputer = true;
-
     //    private static final int VIDEO_WIDTH = 1280;  // dimensions for 720p video
 //    private static final int VIDEO_HEIGHT = 720;
     private static final int VIDEO_WIDTH = 640;  // dimensions for 720p video
@@ -81,7 +78,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private EglCore mEglCore;
     private WindowSurface mDisplaySurface;
     private SurfaceTexture mCameraTexture;  // receives the output from the camera preview
-    private FullFrameRect mFullFrameBlit;
     private final float[] mSTTransMatrix = new float[16];
     private int mTextureId;
     private int mFrameNum = -1;
@@ -258,10 +254,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             mDisplaySurface = null;
         }
 
-        if (mFullFrameBlit != null) {
-            mFullFrameBlit.release(false);
-            mFullFrameBlit = null;
-        }
         if (mEglCore != null) {
             mEglCore.release();
             mEglCore = null;
@@ -390,17 +382,11 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mDisplaySurface.makeCurrent();
 
 
-        if (!use_camera_inputer) {
-            mFullFrameBlit = new FullFrameRect(
-                    new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
-        } else {
-            mSimpleCameraInput.init();
+        mSimpleCameraInput.init();
 //            mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
-            mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
+        mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
 
-            mBeautyFilter.init();
-
-        }
+        mBeautyFilter.init();
 
         mTextureId = OpenGlUtils.getExternalOESTextureID();//mFullFrameBlit.createTextureObject();
 
@@ -459,27 +445,19 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mCameraTexture.updateTexImage();
         mCameraTexture.getTransformMatrix(mSTTransMatrix);
 
-        // Fill the SurfaceView with it.
-//        SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
-//        int viewWidth = sv.getWidth();
-//        int viewHeight = sv.getHeight();
         int viewWidth = mSurfaceWidth;
         int viewHeight = mSurfaceHeight;
         GLES20.glViewport(0, 0, viewWidth, viewHeight);
 
-        if (!use_camera_inputer) {
-            mFullFrameBlit.drawFrame(mTextureId, mSTTransMatrix);
-        } else {
-            if (mUseBeauty) {
-                int id;
-                mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
-                id = mSimpleCameraInput.onDrawToTexture(mTextureId);
+        if (mUseBeauty) {
+            int id;
+            mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
+            id = mSimpleCameraInput.onDrawToTexture(mTextureId);
 
-                mBeautyFilter.onDraw(id, gLCubeBuffer, gLTextureBufferNormal);
-            } else {
-                mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
-                mSimpleCameraInput.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
-            }
+            mBeautyFilter.onDraw(id, gLCubeBuffer, gLTextureBufferNormal);
+        } else {
+            mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
+            mSimpleCameraInput.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
         }
 
         drawExtra(mFrameNum, viewWidth, viewHeight);
@@ -512,13 +490,13 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         int val = frameNum % 3;
         switch (val) {
             case 0:
-                GLES20.glClearColor(1.0f, 0.0f, 0.0f, 1.0f);
+                GLES20.glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
                 break;
             case 1:
-                GLES20.glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
+                GLES20.glClearColor(0.0f, 1.0f, 0.0f, 0.0f);
                 break;
             case 2:
-                GLES20.glClearColor(0.0f, 0.0f, 1.0f, 1.0f);
+                GLES20.glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
                 break;
         }
 
