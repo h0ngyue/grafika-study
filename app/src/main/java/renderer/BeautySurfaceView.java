@@ -139,6 +139,7 @@ public class BeautySurfaceView extends SurfaceView {
             public void surfaceDestroyed(SurfaceHolder holder) {
                 Timber.d("lifecycle surfaceDestroyed");
                 mSurfaceReady = false;
+                pauseRender();
             }
         });
     }
@@ -195,9 +196,13 @@ public class BeautySurfaceView extends SurfaceView {
     }
 
     public void stopRender() {
+        pauseRender();
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));
+    }
+
+    private void pauseRender() {
         mHandler.removeMessages(MSG_FRAME_AVAILABLE);
         mHandler.sendMessage(mHandler.obtainMessage(MSG_STOP_RENDER));
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));
     }
 
     public void frameAvailable(SurfaceTexture st) {
@@ -224,6 +229,22 @@ public class BeautySurfaceView extends SurfaceView {
 
         Message message = mHandler.obtainMessage(MSG_FRAME_AVAILABLE, (int) (timestamp >> 32), (int) timestamp, transform);
         mHandler.sendMessage(message);
+    }
+
+    public void setTextureId(int id) {
+        synchronized (mReadyFence) {
+            if (!mReady) {
+                Timber.e("setTextureId but not readey");
+                return;
+            }
+        }
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_SET_TEXTURE_ID, id, 0, null));
+    }
+
+
+    public void setCameraTexture(SurfaceTexture cameraTexture) {
+        Timber.d("setCameraTexture:" + cameraTexture);
+        this.mCameraTexture = cameraTexture;
     }
 
     private void startRenderThread() {
@@ -265,21 +286,6 @@ public class BeautySurfaceView extends SurfaceView {
         }
     }
 
-    public void setTextureId(int id) {
-        synchronized (mReadyFence) {
-            if (!mReady) {
-                Timber.e("setTextureId but not readey");
-                return;
-            }
-        }
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_SET_TEXTURE_ID, id, 0, null));
-    }
-
-
-    public void setCameraTexture(SurfaceTexture cameraTexture) {
-        Timber.d("setCameraTexture:" + cameraTexture);
-        this.mCameraTexture = cameraTexture;
-    }
 
     private static class RenderHandler extends Handler {
         private WeakReference<BeautySurfaceView> mWeakRenderer;
