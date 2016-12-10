@@ -100,7 +100,7 @@ public class SimpleCameraInput extends GPUImageFilter {
         mTextureTransformMatrixLocation = GLES20.glGetUniformLocation(mGLProgId, "textureTransform");
     }
 
-    public int onDrawToTexture(final int textureId, FloatBuffer cubeBuffer, FloatBuffer textureBuffer) {
+    public int onDrawToTexture(final int textureId) {
         if (mFrameBuffers == null)
             return OpenGlUtils.NO_TEXTURE;
         runPendingOnDrawTasks();
@@ -110,11 +110,11 @@ public class SimpleCameraInput extends GPUImageFilter {
         if (!isInitialized()) {
             return OpenGlUtils.NOT_INIT;
         }
-        cubeBuffer.position(0);
-        GLES20.glVertexAttribPointer(mGLAttribPosition, 2, GLES20.GL_FLOAT, false, 0, cubeBuffer);
+        mGLCubeBuffer.position(0);
+        GLES20.glVertexAttribPointer(mGLAttribPosition, 2, GLES20.GL_FLOAT, false, 0, mGLCubeBuffer);
         GLES20.glEnableVertexAttribArray(mGLAttribPosition);
-        textureBuffer.position(0);
-        GLES20.glVertexAttribPointer(mGLAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 0, textureBuffer);
+        mGLTextureBuffer.position(0);
+        GLES20.glVertexAttribPointer(mGLAttribTextureCoordinate, 2, GLES20.GL_FLOAT, false, 0, mGLTextureBuffer);
         GLES20.glEnableVertexAttribArray(mGLAttribTextureCoordinate);
         GLES20.glUniformMatrix4fv(mTextureTransformMatrixLocation, 1, false, mTextureTransformMatrix, 0);
 
