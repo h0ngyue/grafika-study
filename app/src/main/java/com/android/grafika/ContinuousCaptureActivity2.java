@@ -17,6 +17,7 @@
 package com.android.grafika;
 
 import android.app.Activity;
+import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
@@ -47,10 +48,14 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.MagicBaseGroupFilter;
-import filter.MyBeautyFilter;
-import filter.base.MagicCameraInputFilter;
 import filter.MyGPUImageFilter;
+import filter.MyRGBMapFilter;
+import filter.MySmoothFilter;
+import filter.SimpleSmoothFilter;
+import filter.base.GPUImageFilter;
+import filter.base.MagicCameraInputFilter;
 import filter.utils.OpenGlUtils;
+import filter.utils.Rotation;
 import filter.utils.TextureRotationUtil;
 import timber.log.Timber;
 
@@ -98,9 +103,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
     private MyGPUImageFilter mCameraInputFilter = new MagicCameraInputFilter();
 
-        private MyGPUImageFilter mBeautyFilter = new MyBeautyFilter();
-//    private MyGPUImageFilter mBeautyFilter = new MySmoothFilter();
-//    private MyGPUImageFilter mBeautyFilter = new MyRGBMapFilter();
 
     private TextView mTvFps;
 
@@ -158,6 +160,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
         SurfaceHolder sh = sv.getHolder();
         sh.addCallback(this);
+//        sh.setFormat(PixelFormat.RGBA_8888);
 
         mIvDump = (ImageView) findViewById(R.id.mIvDump);
         mCbOutput2Image = (CheckBox) findViewById(R.id.mCbOutput2Image);
@@ -204,7 +207,21 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         gLTextureBufferNormal = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
-        gLTextureBufferMirror.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
+        gLTextureBufferNormal.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
+
+        adjustSize(270, true, false, gLTextureBufferNormal, gLCubeBuffer);
+        adjustSize(90, true, false, gLTextureBufferMirror, gLCubeBuffer);
+    }
+
+    protected void adjustSize(int rotation, boolean flipHorizontal, boolean flipVertical, FloatBuffer texBuffer, FloatBuffer cubeBuffer) {
+        float[] textureCords = TextureRotationUtil.getRotation(Rotation.fromInt(rotation),
+                flipHorizontal, flipVertical);
+
+        float[] cube = TextureRotationUtil.CUBE;
+        cubeBuffer.clear();
+        cubeBuffer.put(cube).position(0);
+        texBuffer.clear();
+        texBuffer.put(textureCords).position(0);
     }
 
     @Override
@@ -297,7 +314,8 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 
         // Set the preview aspect ratio.
         AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.continuousCapture_afl);
-        layout.setAspectRatio((double) cameraPreviewSize.width / cameraPreviewSize.height);
+//        layout.setAspectRatio((double) cameraPreviewSize.width / cameraPreviewSize.height);
+        layout.setAspectRatio((double) cameraPreviewSize.height / cameraPreviewSize.width);
     }
 
     /**
@@ -318,6 +336,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     public void clickCapture(@SuppressWarnings("unused") View unused) {
         Log.d(TAG, "capture");
     }
+
 
 
     @Override   // SurfaceHolder.Callback
@@ -343,11 +362,12 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             mCameraInputFilter.init();
 
             mBeautyFilter.init();
-
             mBeautyFilter.onOutputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
-            mBeautyFilter.onInputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
             if (mBeautyFilter instanceof MagicBaseGroupFilter) {
                 ((MagicBaseGroupFilter) mBeautyFilter).setViewportParam(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
+            } else if (mBeautyFilter instanceof MyGPUImageFilter) {
+                ((MyGPUImageFilter)mBeautyFilter).onInputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
+            } else {
             }
         }
 
@@ -387,6 +407,13 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mHandler.sendEmptyMessage(MainHandler.MSG_FRAME_AVAILABLE);
     }
 
+
+
+//        private GPUImageFilter mBeautyFilter = new SimpleSmoothFilter();
+//    private MyGPUImageFilter mBeautyFilter = new MySmoothFilter();
+//        private GPUImageFilter mBeautyFilter = new MyBeautyFilter();
+    private GPUImageFilter mBeautyFilter = new MyRGBMapFilter();
+
     /**
      * Draws a frame onto the SurfaceView and the encoder surface.
      * <p>
@@ -420,14 +447,17 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
         } else {
             if (mUseBeauty) {
-                if (mBeautyFilter instanceof  MagicBaseGroupFilter) {
-                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
+                if (mBeautyFilter instanceof MagicBaseGroupFilter) {
+                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
+                } else if (mBeautyFilter instanceof MyGPUImageFilter) {
+//                    ((MyGPUImageFilter) mBeautyFilter).onDraw(mTextureId);
+                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
                 } else {
-                    mBeautyFilter.onDraw(mTextureId);
+                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
                 }
             } else {
                 ((MagicCameraInputFilter) mCameraInputFilter).setTextureTransformMatrix(mTmpMatrix);
-                mCameraInputFilter.onDraw(mTextureId);
+                mCameraInputFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
             }
         }
 

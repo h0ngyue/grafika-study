@@ -6,6 +6,7 @@ import android.opengl.GLES20;
 
 import com.android.grafika.R;
 
+import filter.base.gpuimage.GPUImageTwoInputFilter;
 import filter.utils.OpenGlUtils;
 
 
@@ -13,7 +14,7 @@ import filter.utils.OpenGlUtils;
  * Created by shuailongcheng on 06/12/2016.
  */
 
-public class MyRGBMapFilter extends MyGPUImageTwoInputFilter {
+public class MyRGBMapFilter extends GPUImageTwoInputFilter {
     int mLevel;
 
     public MyRGBMapFilter() {

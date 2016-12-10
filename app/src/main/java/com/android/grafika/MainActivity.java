@@ -151,7 +151,7 @@ public class MainActivity extends ListActivity {
             ContentManager.getInstance().createAll(this);
         }
 
-//        startActivity(new Intent(this, ContinuousCaptureActivity2.class));
+        startActivity(new Intent(this, ContinuousCaptureActivity2.class));
     }
 
     /**
