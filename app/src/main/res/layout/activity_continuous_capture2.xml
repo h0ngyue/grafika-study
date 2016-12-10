@@ -23,7 +23,7 @@
         android:layout_below="@id/capture_button"
         android:layout_centerInParent="true">
 
-        <SurfaceView
+        <renderer.BeautySurfaceView
             android:id="@+id/continuousCapture_surfaceView"
             android:layout_width="match_parent"
             android:layout_height="match_parent"

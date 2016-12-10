@@ -7,11 +7,15 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.util.AttributeSet;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.android.grafika.gles.EglCore;
 import com.android.grafika.gles.WindowSurface;
+import com.android.grafika.kikyo.MyUtil;
 
 import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
@@ -30,6 +34,18 @@ import timber.log.Timber;
  */
 public class BeautySurfaceView extends SurfaceView {
 
+    private volatile TestCallback mTestCallback;
+
+    public interface TestCallback {
+        TextView getFpsTextView();
+
+        ImageView getDumpImageView();
+    }
+
+    public void setTestCallback(TestCallback cb) {
+        mTestCallback = cb;
+    }
+
     private Object mReadyFence = new Object();      // guards ready/running
     private boolean mReady;
     private boolean mRunning;
@@ -47,24 +63,24 @@ public class BeautySurfaceView extends SurfaceView {
 
     private EglCore mEglCore;
     private WindowSurface mDisplaySurface;
-    private SurfaceTexture mCameraTexture;  // receives the output from the camera preview
-    private final float[] mSTTransMatrix = new float[16];
+    private volatile SurfaceTexture mCameraTexture;  // receives the output from the camera preview
     private int mTextureId;
     private int mFrameNum = -1;
 
     private int mSurfaceWidth, mSurfaceHeight;
 
+    private SimpleCameraInput mSimpleCameraInput = new SimpleCameraInput();
+
     //    private GPUImageFilter mBeautyFilter = new SimpleSmoothFilter();
     private GPUImageFilter mBeautyFilter = new MyBeautyFilter();
     //    private GPUImageFilter mBeautyFilter = new SimpleRGBMapFilter();
-    private SimpleCameraInput mSimpleCameraInput = new SimpleCameraInput();
 
 
     public volatile FloatBuffer gLCubeBuffer;
     public volatile FloatBuffer gLTextureBufferMirror;
     public volatile FloatBuffer gLTextureBufferNormal;
 
-    private int mCameraWidth = 640, mCameraHeight = 480;
+    private int mDefaultCameraWidth = 640, mDefaultCameraHeight = 480;
 
     public BeautySurfaceView(Context context) {
         super(context);
@@ -83,8 +99,8 @@ public class BeautySurfaceView extends SurfaceView {
 
 
     public void setCameraSize(int cameraWidth, int cameraHeight) {
-        mCameraWidth = cameraWidth;
-        mCameraHeight = cameraHeight;
+        mDefaultCameraWidth = cameraWidth;
+        mDefaultCameraHeight = cameraHeight;
     }
 
     private void init() {
@@ -111,17 +127,14 @@ public class BeautySurfaceView extends SurfaceView {
             public void surfaceCreated(SurfaceHolder holder) {
                 mSurfaceReady = true;
 
-                mEglCore = new EglCore(null, EglCore.FLAG_TRY_GLES3);
-                mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
-                mDisplaySurface.makeCurrent();
+                startRender(new RenderConfig(holder.getSurface(), mDefaultCameraWidth, mDefaultCameraHeight));
 
-                mSimpleCameraInput.init();
-                mSimpleCameraInput.initCameraFrameBuffer(mCameraWidth, mCameraHeight);
-                mBeautyFilter.init();
+                holder.setFixedSize(mDefaultCameraHeight, mDefaultCameraWidth);
             }
 
             @Override
             public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                Timber.d("surfaceChanged, width:%d, height:%d", width, height);
                 mSurfaceWidth = width;
                 mSurfaceHeight = height;
             }
@@ -144,10 +157,22 @@ public class BeautySurfaceView extends SurfaceView {
         texBuffer.put(textureCords).position(0);
     }
 
-    /**
-     * 整个必须在activity 的onCreate里调用
-     */
-    private void startRender(SurfaceView surfaceView) {
+
+    private static class RenderConfig {
+        public final Surface mSurface;
+        public final int mCameraWidth;
+        public final int mCameraHeight;
+
+        private RenderConfig(Surface mSurface, int mCameraWidth, int mCameraHeight) {
+            this.mSurface = mSurface;
+            this.mCameraWidth = mCameraWidth;
+            this.mCameraHeight = mCameraHeight;
+        }
+    }
+
+    private void startRender(RenderConfig config) {
+        startRenderThread();
+        mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RENDER, config));
     }
 
     public void stopRender() {
@@ -156,13 +181,30 @@ public class BeautySurfaceView extends SurfaceView {
         mHandler.sendMessage(mHandler.obtainMessage(MSG_QUIT));
     }
 
-    public void frameAvailable() {
+    public void frameAvailable(SurfaceTexture st) {
         synchronized (mReadyFence) {
             if (!mReady) {
+                Timber.e("frameAvailable but not readey");
                 return;
             }
         }
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_FRAME_AVAILABLE));
+
+        float[] transform = new float[16];      // TODO - avoid alloc every frame
+        st.getTransformMatrix(transform);
+
+        long timestamp = st.getTimestamp();
+//        if (timestamp == 0) {
+//            // Seeing this after device is toggled off/on with power button.  The
+//            // first frame back has a zero timestamp.
+//            //
+//            // MPEG4Writer thinks this is cause to abort() in native code, so it's very
+//            // important that we just ignore the frame.
+//            Timber.e("frameAvailable HEY: got SurfaceTexture with timestamp of zero");
+//            return;
+//        }
+
+        Message message = mHandler.obtainMessage(MSG_FRAME_AVAILABLE, (int) (timestamp >> 32), (int) timestamp, transform);
+        mHandler.sendMessage(message);
     }
 
     private void startRenderThread() {
@@ -176,7 +218,21 @@ public class BeautySurfaceView extends SurfaceView {
             new Thread("BeautyOutputer") {
                 @Override
                 public void run() {
-                    BeautySurfaceView.this.run();
+                    Looper.prepare();
+
+                    synchronized (mReadyFence) {
+                        mHandler = new RenderHandler(BeautySurfaceView.this);
+                        mReady = true;
+                        mReadyFence.notify();
+                    }
+
+                    Looper.loop();
+
+                    Timber.d("SurfaceRenderThread exiting");
+                    synchronized (mReadyFence) {
+                        mReady = mRunning = false;
+                        mHandler = null;
+                    }
                 }
             }.start();
 
@@ -189,12 +245,12 @@ public class BeautySurfaceView extends SurfaceView {
             }
         }
 
-        mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RENDER));
     }
 
-    private void setTextureId(int id) {
+    public void setTextureId(int id) {
         synchronized (mReadyFence) {
             if (!mReady) {
+                Timber.e("setTextureId but not readey");
                 return;
             }
         }
@@ -202,23 +258,10 @@ public class BeautySurfaceView extends SurfaceView {
     }
 
 
-    public void run() {
-        Looper.prepare();
-
-        synchronized (mReadyFence) {
-            mHandler = new RenderHandler(this);
-            mReady = true;
-            mReadyFence.notify();
-        }
-
-        Looper.loop();
-
-        Timber.d("SurfaceRenderThread exiting");
-        synchronized (mReadyFence) {
-            mReady = mRunning = false;
-            mHandler = null;
-        }
+    public void setCameraTexture(SurfaceTexture cameraTexture) {
+        this.mCameraTexture = cameraTexture;
     }
+
 
     private static class RenderHandler extends Handler {
         private WeakReference<BeautySurfaceView> mWeakRenderer;
@@ -229,7 +272,6 @@ public class BeautySurfaceView extends SurfaceView {
 
         @Override
         public void handleMessage(Message msg) {
-            int what = msg.what;
             Object obj = msg.obj;
 
             BeautySurfaceView outputer = mWeakRenderer.get();
@@ -241,17 +283,25 @@ public class BeautySurfaceView extends SurfaceView {
 
             switch (msg.what) {
                 case MSG_START_RENDER:
+//                    Timber.d("handleMessage MSG_START_RENDER");
+                    outputer.handleStartRender((RenderConfig) obj);
                     break;
                 case MSG_STOP_RENDER:
+//                    Timber.d("handleMessage MSG_STOP_RENDER");
                     outputer.handleStopRender();
                     break;
                 case MSG_FRAME_AVAILABLE:
-                    outputer.handleDrawFrame();
+//                    Timber.d("handleMessage MSG_FRAME_AVAILABLE");
+                    long timestamp = (((long) msg.arg1) << 32) |
+                            (((long) msg.arg2) & 0xffffffffL);
+                    outputer.handleDrawFrame((float[]) obj, timestamp);
                     break;
                 case MSG_SET_TEXTURE_ID:
+//                    Timber.d("handleMessage MSG_SET_TEXTURE_ID");
                     outputer.handleSetTexture(msg.arg1);
                     break;
                 case MSG_QUIT:
+                    Timber.d("handleMessage MSG_QUIT");
                     Looper.myLooper().quit();
                     break;
                 default:
@@ -280,20 +330,60 @@ public class BeautySurfaceView extends SurfaceView {
     }
 
 
-    private boolean first = true;
-    private boolean mPreReadPixel = false;
-    private boolean mOutput2Image, mUseBeauty, mReadPixel;
+    /**
+     * 整个必须在activity 的onCreate里调用
+     */
+    private void handleStartRender(RenderConfig config) {
+        Timber.d("handleStartRender");
+        mEglCore = new EglCore(null, EglCore.FLAG_TRY_GLES3);
+        mDisplaySurface = new WindowSurface(mEglCore, config.mSurface, false);
+        mDisplaySurface.makeCurrent();
 
-    private void handleDrawFrame() {
-        Timber.d("drawFrame");
+        mSimpleCameraInput.init();
+        mSimpleCameraInput.initCameraFrameBuffer(config.mCameraWidth, config.mCameraHeight);
+        mBeautyFilter.init();
+
+
+//        mSimpleCameraInput.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
+//        mBeautyFilter.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
+        mSimpleCameraInput.onOutputSizeChanged(mDefaultCameraHeight, mDefaultCameraWidth);
+        mBeautyFilter.onOutputSizeChanged(mDefaultCameraHeight, mDefaultCameraWidth);
+    }
+
+    private boolean first = true;
+    private volatile boolean mOutput2Image, mUseBeauty, mReadPixel, mPreReadPixel;
+    private long mFpsStartTs;
+
+    public void setmOutput2Image(boolean mOutput2Image) {
+        this.mOutput2Image = mOutput2Image;
+    }
+
+    public void setmUseBeauty(boolean mUseBeauty) {
+        this.mUseBeauty = mUseBeauty;
+    }
+
+    public void setmReadPixel(boolean mReadPixel) {
+        this.mReadPixel = mReadPixel;
+    }
+
+    public void setmPreReadPixel(boolean mPreReadPixel) {
+        this.mPreReadPixel = mPreReadPixel;
+    }
+
+    private void handleDrawFrame(float[] trans, long timestamp) {
         if (mEglCore == null) {
             Timber.d("Skipping drawFrame after shutdown");
             return;
         }
 
-
         // Latch the next frame from the camera.
         mDisplaySurface.makeCurrent();
+
+        SurfaceTexture cameraST = mCameraTexture;
+        if (cameraST == null) {
+            return;
+        }
+        cameraST.updateTexImage();
 
 
         if (first) {
@@ -301,12 +391,12 @@ public class BeautySurfaceView extends SurfaceView {
         } else {
             if (mReadPixel && mPreReadPixel) {
 //            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
-//                MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
+                MyUtil.tryReadPixels(480, 640, mOutput2Image && mTestCallback != null ? mTestCallback.getDumpImageView() : null);
             }
         }
 
         mCameraTexture.updateTexImage();
-        mCameraTexture.getTransformMatrix(mSTTransMatrix);
+        mCameraTexture.getTransformMatrix(trans);
 
         int viewWidth = mSurfaceWidth;
         int viewHeight = mSurfaceHeight;
@@ -314,35 +404,42 @@ public class BeautySurfaceView extends SurfaceView {
 
         if (mUseBeauty) {
             int id;
-            mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
+            mSimpleCameraInput.setTextureTransformMatrix(trans);
             id = mSimpleCameraInput.onDrawToTexture(mTextureId);
 
             mBeautyFilter.onDraw(id, gLCubeBuffer, gLTextureBufferNormal);
         } else {
-            mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
+            mSimpleCameraInput.setTextureTransformMatrix(trans);
             mSimpleCameraInput.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
         }
 
         drawExtra(mFrameNum, viewWidth, viewHeight);
-//        mDisplaySurface.setPresentationTime(mCameraTexture.getTimestamp());
+//        mDisplaySurface.setPresentationTime(timestamp);
         Timber.v("mDisplaySurface before swapBuffers");
         mDisplaySurface.swapBuffers();
         Timber.v("mDisplaySurface after swapBuffers");
 
-//        if (mReadPixel && !mPreReadPixel) {
-////            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
-//            MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
-//        }
+        if (mReadPixel && !mPreReadPixel) {
+//            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
+            MyUtil.tryReadPixels(480, 640, mOutput2Image && (mTestCallback != null) ? mTestCallback.getDumpImageView() : null);
+        }
 
         int frameNum = (mFrameNum++) % 10;
 
-//        if (frameNum == 0) {
-//            mFpsStartTs = System.nanoTime() / 1000000;
-//        } else if (frameNum == 9) {
-//            long intevalMs = ((System.nanoTime() / 1000000 - mFpsStartTs) / 10);
-//
-//            mTvFps.setText(String.format("fps: %d", 1000 / intevalMs));
-//        }
+        if (frameNum == 0) {
+            mFpsStartTs = System.nanoTime() / 1000000;
+        } else if (frameNum == 9) {
+            final long intevalMs = ((System.nanoTime() / 1000000 - mFpsStartTs) / 10);
+
+            if (mTestCallback != null) {
+                post(new Runnable() {
+                    @Override
+                    public void run() {
+                        mTestCallback.getFpsTextView().setText(String.format("fps: %d", 1000 / intevalMs));
+                    }
+                });
+            }
+        }
     }
 
     /**

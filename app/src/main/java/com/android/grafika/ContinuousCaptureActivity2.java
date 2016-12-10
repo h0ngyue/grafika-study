@@ -19,11 +19,7 @@ package com.android.grafika;
 import android.app.Activity;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
-import android.opengl.GLES20;
 import android.os.Bundle;
-import android.os.Environment;
-import android.os.Handler;
-import android.os.Message;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -33,23 +29,10 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.android.grafika.gles.EglCore;
-import com.android.grafika.gles.WindowSurface;
-import com.android.grafika.kikyo.MyUtil;
-
-import java.io.File;
 import java.io.IOException;
-import java.lang.ref.WeakReference;
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.FloatBuffer;
 
-import filter.MyBeautyFilter;
-import filter.SimpleCameraInput;
-import filter.base.GPUImageFilter;
 import filter.utils.OpenGlUtils;
-import filter.utils.Rotation;
-import filter.utils.TextureRotationUtil;
+import renderer.BeautySurfaceView;
 import timber.log.Timber;
 
 /**
@@ -64,7 +47,7 @@ import timber.log.Timber;
  * through our Handler.  That causes us to render the new frame to the display and to
  * our video encoder.
  */
-public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolder.Callback,
+public class ContinuousCaptureActivity2 extends Activity implements
         SurfaceTexture.OnFrameAvailableListener {
     private static final String TAG = MainActivity.TAG;
 
@@ -74,71 +57,21 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private static final int VIDEO_HEIGHT = 480;
     private static final int DESIRED_PREVIEW_FPS = 15;
 
-    private EglCore mEglCore;
-    private WindowSurface mDisplaySurface;
     private SurfaceTexture mCameraTexture;  // receives the output from the camera preview
     private final float[] mSTTransMatrix = new float[16];
-    private int mTextureId;
-    private int mFrameNum = -1;
 
     private Camera mCamera;
     private int mCameraPreviewThousandFps;
 
 
-    private MainHandler mHandler;
-
     private ImageView mIvDump;
-    private CheckBox mCbOutput2Image, mCbUseBeauty, mCbReadPixel;
-    private CheckBox mCbPreReadPixel;
-    private boolean mOutput2Image, mUseBeauty, mReadPixel;
+    private CheckBox mCbOutput2Image, mCbUseBeauty, mCbReadPixel, mCbPreReadPixel;
 
     private TextView mTvFps;
 
     private long mFpsStartTs;
 
-    public volatile FloatBuffer gLCubeBuffer;
-    public volatile FloatBuffer gLTextureBufferMirror;
-    public volatile FloatBuffer gLTextureBufferNormal;
-
-
-    /**
-     * Custom message handler for main UI thread.
-     * <p>
-     * Used to handle camera preview "frame available" notifications, and implement the
-     * blinking "recording" text.  Receives callback messages from the encoder thread.
-     */
-    private static class MainHandler extends Handler {
-        public static final int MSG_FRAME_AVAILABLE = 1;
-        public static final int MSG_FILE_SAVE_COMPLETE = 2;
-
-        private WeakReference<ContinuousCaptureActivity2> mWeakActivity;
-
-        public MainHandler(ContinuousCaptureActivity2 activity) {
-            mWeakActivity = new WeakReference<ContinuousCaptureActivity2>(activity);
-        }
-
-
-        @Override
-        public void handleMessage(Message msg) {
-            ContinuousCaptureActivity2 activity = mWeakActivity.get();
-            if (activity == null) {
-                Log.d(TAG, "Got message for dead activity");
-                return;
-            }
-
-            switch (msg.what) {
-                case MSG_FRAME_AVAILABLE: {
-                    activity.drawFrame();
-                    break;
-                }
-                case MSG_FILE_SAVE_COMPLETE: {
-                    break;
-                }
-                default:
-                    throw new RuntimeException("Unknown message " + msg.what);
-            }
-        }
-    }
+    private int mCameraTextureId;
 
     /**
      * Handles onClick for "capture" button.
@@ -167,36 +100,35 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         });
     }
 
+    BeautySurfaceView mBeautySurfaceView;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_continuous_capture2);
 
-        SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
-        SurfaceHolder sh = sv.getHolder();
+        mBeautySurfaceView = (BeautySurfaceView) findViewById(R.id.continuousCapture_surfaceView);
+        SurfaceHolder sh = mBeautySurfaceView.getHolder();
 
         Timber.d("onCreate, sh.isCreating():%b", sh.isCreating());
-        sh.addCallback(this);
         sh.setFixedSize(VIDEO_HEIGHT, VIDEO_WIDTH);
 //        sh.setFormat(PixelFormat.RGBA_8888);
 
         mIvDump = (ImageView) findViewById(R.id.mIvDump);
         mCbOutput2Image = (CheckBox) findViewById(R.id.mCbOutput2Image);
-        mCbOutput2Image.setChecked(mOutput2Image);
         mCbOutput2Image.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mOutput2Image = isChecked;
+                mBeautySurfaceView.setmOutput2Image(isChecked);
                 mIvDump.setVisibility(isChecked ? View.VISIBLE : View.GONE);
             }
         });
 
         mCbPreReadPixel = (CheckBox) findViewById(R.id.mCbPreReadPixel);
-        mCbPreReadPixel.setChecked(mPreReadPixel);
         mCbPreReadPixel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mPreReadPixel = isChecked;
+                mBeautySurfaceView.setmPreReadPixel(isChecked);
             }
         });
 
@@ -205,7 +137,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mCbUseBeauty.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mUseBeauty = isChecked;
+                mBeautySurfaceView.setmUseBeauty(isChecked);
             }
         });
 
@@ -213,48 +145,11 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mCbReadPixel.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
-                mReadPixel = isChecked;
+                mBeautySurfaceView.setmReadPixel(isChecked);
             }
         });
 
         mTvFps = (TextView) findViewById(R.id.mTvFps);
-
-
-        mHandler = new MainHandler(this);
-
-        gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        gLCubeBuffer.put(TextureRotationUtil.CUBE).position(0);
-
-        gLTextureBufferMirror = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        gLTextureBufferMirror.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
-
-        gLTextureBufferNormal = ByteBuffer.allocateDirect(TextureRotationUtil.TEXTURE_NO_ROTATION.length * 4)
-                .order(ByteOrder.nativeOrder())
-                .asFloatBuffer();
-        gLTextureBufferNormal.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
-
-        adjustSize(270, true, false, gLTextureBufferNormal, gLCubeBuffer);
-//        adjustSize(90, true, false, gLTextureBufferMirror, gLCubeBuffer);
-    }
-
-    protected void adjustSize(int rotation, boolean flipHorizontal, boolean flipVertical, FloatBuffer texBuffer, FloatBuffer cubeBuffer) {
-        float[] textureCords = TextureRotationUtil.getRotation(Rotation.fromInt(rotation),
-                flipHorizontal, flipVertical);
-
-        float[] cube = TextureRotationUtil.CUBE;
-        cubeBuffer.clear();
-        cubeBuffer.put(cube).position(0);
-        texBuffer.clear();
-        texBuffer.put(textureCords).position(0);
-    }
-
-    @Override
-    public File getFilesDir() {
-        return Environment.getExternalStorageDirectory();
     }
 
 
@@ -274,17 +169,9 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         releaseCamera();
 
         if (mCameraTexture != null) {
+            mBeautySurfaceView.setCameraTexture(null);
             mCameraTexture.release();
             mCameraTexture = null;
-        }
-        if (mDisplaySurface != null) {
-            mDisplaySurface.release();
-            mDisplaySurface = null;
-        }
-
-        if (mEglCore != null) {
-            mEglCore.release();
-            mEglCore = null;
         }
         Log.d(TAG, "onPause() done");
     }
@@ -340,6 +227,8 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         AspectFrameLayout layout = (AspectFrameLayout) findViewById(R.id.continuousCapture_afl);
 //        layout.setAspectRatio((double) cameraPreviewSize.width / cameraPreviewSize.height);
         layout.setAspectRatio((double) cameraPreviewSize.height / cameraPreviewSize.width);
+
+        doStartCamera();
     }
 
     /**
@@ -354,65 +243,30 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         }
     }
 
-
-    @Override   // SurfaceHolder.Callback
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        Log.d(TAG, "surfaceChanged fmt=" + format + " size=" + width + "x" + height +
-                " holder=" + holder);
-        mSurfaceWidth = width;
-        mSurfaceHeight = height;
-
-        mSimpleCameraInput.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
-        mBeautyFilter.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
-    }
-
-    private int mSurfaceWidth, mSurfaceHeight;
-
-    @Override   // SurfaceHolder.Callback
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.d(TAG, "surfaceDestroyed holder=" + holder);
-        // TODO: 10/12/2016 不能再这里释放，在这里释放会让整个windows 都被影响，变模糊了
-//        mSimpleCameraInput.destroyFramebuffers();
-    }
-
     @Override   // SurfaceTexture.OnFrameAvailableListener; runs on arbitrary thread
     public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        //Log.d(TAG, "frame available");
-        mHandler.sendEmptyMessage(MainHandler.MSG_FRAME_AVAILABLE);
+        mBeautySurfaceView.setTextureId(mCameraTextureId);
+        mBeautySurfaceView.frameAvailable(surfaceTexture);
     }
 
 
-    //    private GPUImageFilter mBeautyFilter = new SimpleSmoothFilter();
-    private GPUImageFilter mBeautyFilter = new MyBeautyFilter();
-    //    private GPUImageFilter mBeautyFilter = new SimpleRGBMapFilter();
-    private SimpleCameraInput mSimpleCameraInput = new SimpleCameraInput();
-
-    @Override   // SurfaceHolder.Callback
-    public void surfaceCreated(SurfaceHolder holder) {
-        Log.d(TAG, "surfaceCreated holder=" + holder);
-
-        // Set up everything that requires an EGL context.
-        //
-        // We had to wait until we had a surface because you can't make an EGL context current
-        // without one, and creating a temporary 1x1 pbuffer is a waste of time.
-        //
-        // The display surface that we use for the SurfaceView, and the encoder surface we
-        // use for video, use the same EGL context.
-        mEglCore = new EglCore(null, EglCore.FLAG_TRY_GLES3);
-        mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
-        mDisplaySurface.makeCurrent();
-
-
-        mSimpleCameraInput.init();
-        mSimpleCameraInput.initCameraFrameBuffer(4000, 3000);
-
-        mBeautyFilter.init();
-
-        mTextureId = OpenGlUtils.getExternalOESTextureID();//mFullFrameBlit.createTextureObject();
-
-
-        mCameraTexture = new SurfaceTexture(mTextureId);
+    public void doStartCamera() {
+        mCameraTextureId = OpenGlUtils.getExternalOESTextureID();
+        mCameraTexture = new SurfaceTexture(mCameraTextureId);
         mCameraTexture.setOnFrameAvailableListener(this);
+
+        mBeautySurfaceView.setCameraTexture(mCameraTexture);
+        mBeautySurfaceView.setTestCallback(new BeautySurfaceView.TestCallback() {
+            @Override
+            public TextView getFpsTextView() {
+                return mTvFps;
+            }
+
+            @Override
+            public ImageView getDumpImageView() {
+                return mIvDump;
+            }
+        });
 
         Log.d(TAG, "starting camera preview");
         try {
@@ -425,105 +279,5 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         // TODO: adjust bit rate based on frame rate?
         // TODO: adjust video width/height based on what we're getting from the camera preview?
         //       (can we guarantee that camera preview size is compatible with AVC video encoder?)
-    }
-
-    /**
-     * Draws a frame onto the SurfaceView and the encoder surface.
-     * <p>
-     * This will be called whenever we get a new preview frame from the camera.  This runs
-     * on the UI thread, which ordinarily isn't a great idea -- you really want heavy work
-     * to be on a different thread -- but we're really just throwing a few things at the GPU.
-     * The upside is that we don't have to worry about managing state changes between threads.
-     * <p>
-     * If there was a pending frame available notification when we shut down, we might get
-     * here after onPause().
-     */
-    private boolean first = true;
-    private boolean mPreReadPixel = false;
-
-    private void drawFrame() {
-        Log.d(TAG, "drawFrame");
-        if (mEglCore == null) {
-            Log.d(TAG, "Skipping drawFrame after shutdown");
-            return;
-        }
-
-
-        // Latch the next frame from the camera.
-        mDisplaySurface.makeCurrent();
-
-
-        if (first) {
-            first = false;
-        } else {
-            if (mReadPixel && mPreReadPixel) {
-//            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
-                MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
-            }
-        }
-
-        mCameraTexture.updateTexImage();
-        mCameraTexture.getTransformMatrix(mSTTransMatrix);
-
-        int viewWidth = mSurfaceWidth;
-        int viewHeight = mSurfaceHeight;
-        GLES20.glViewport(0, 0, viewWidth, viewHeight);
-
-        if (mUseBeauty) {
-            int id;
-            mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
-            id = mSimpleCameraInput.onDrawToTexture(mTextureId);
-
-            mBeautyFilter.onDraw(id, gLCubeBuffer, gLTextureBufferNormal);
-        } else {
-            mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
-            mSimpleCameraInput.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
-        }
-
-        drawExtra(mFrameNum, viewWidth, viewHeight);
-//        mDisplaySurface.setPresentationTime(mCameraTexture.getTimestamp());
-        Timber.v("mDisplaySurface before swapBuffers");
-        mDisplaySurface.swapBuffers();
-        Timber.v("mDisplaySurface after swapBuffers");
-
-        if (mReadPixel && !mPreReadPixel) {
-//            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
-            MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
-        }
-
-        int frameNum = (mFrameNum++) % 10;
-
-        if (frameNum == 0) {
-            mFpsStartTs = System.nanoTime() / 1000000;
-        } else if (frameNum == 9) {
-            long intevalMs = ((System.nanoTime() / 1000000 - mFpsStartTs) / 10);
-
-            mTvFps.setText(String.format("fps: %d", 1000 / intevalMs));
-        }
-    }
-
-    /**
-     * Adds a bit of extra stuff to the display just to give it flavor.
-     */
-    private static void drawExtra(int frameNum, int width, int height) {
-        // We "draw" with the scissor rect and clear calls.  Note this uses window coordinates.
-        int val = frameNum % 3;
-        switch (val) {
-            case 0:
-                GLES20.glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
-                break;
-            case 1:
-                GLES20.glClearColor(0.0f, 1.0f, 0.0f, 0.0f);
-                break;
-            case 2:
-                GLES20.glClearColor(0.0f, 0.0f, 1.0f, 0.0f);
-                break;
-        }
-
-        int xpos = (int) (width * ((frameNum % 100) / 100.0f));
-        GLES20.glEnable(GLES20.GL_SCISSOR_TEST);
-        GLES20.glScissor(xpos, 0, width / 32, height / 32);
-        GLES20.glClear(GLES20.GL_COLOR_BUFFER_BIT);
-        GLES20.glDisable(GLES20.GL_SCISSOR_TEST);
     }
 }
