@@ -17,7 +17,6 @@
 package com.android.grafika;
 
 import android.app.Activity;
-import android.graphics.PixelFormat;
 import android.graphics.SurfaceTexture;
 import android.hardware.Camera;
 import android.opengl.GLES20;
@@ -51,6 +50,8 @@ import filter.MagicBaseGroupFilter;
 import filter.MyGPUImageFilter;
 import filter.MyRGBMapFilter;
 import filter.MySmoothFilter;
+import filter.SimpleCameraInput;
+import filter.SimpleRGBMapFilter;
 import filter.SimpleSmoothFilter;
 import filter.base.GPUImageFilter;
 import filter.base.MagicCameraInputFilter;
@@ -87,7 +88,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private WindowSurface mDisplaySurface;
     private SurfaceTexture mCameraTexture;  // receives the output from the camera preview
     private FullFrameRect mFullFrameBlit;
-    private final float[] mTmpMatrix = new float[16];
+    private final float[] mSTTransMatrix = new float[16];
     private int mTextureId;
     private int mFrameNum = -1;
 
@@ -100,9 +101,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     private ImageView mIvDump;
     private CheckBox mCbOutput2Image, mCbUseBeauty, mCbReadPixel;
     private boolean mOutput2Image, mUseBeauty, mReadPixel;
-
-    private MyGPUImageFilter mCameraInputFilter = new MagicCameraInputFilter();
-
 
     private TextView mTvFps;
 
@@ -338,6 +336,35 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     }
 
 
+    @Override   // SurfaceHolder.Callback
+    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+        Log.d(TAG, "surfaceChanged fmt=" + format + " size=" + width + "x" + height +
+                " holder=" + holder);
+    }
+
+    @Override   // SurfaceHolder.Callback
+    public void surfaceDestroyed(SurfaceHolder holder) {
+        Log.d(TAG, "surfaceDestroyed holder=" + holder);
+        // TODO: 10/12/2016 不能再这里释放，在这里释放会让整个windows 都被影响，变模糊了
+//        mSimpleCameraInput.destroyFramebuffers();
+    }
+
+    @Override   // SurfaceTexture.OnFrameAvailableListener; runs on arbitrary thread
+    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
+        //Log.d(TAG, "frame available");
+        mHandler.sendEmptyMessage(MainHandler.MSG_FRAME_AVAILABLE);
+    }
+
+
+            private GPUImageFilter mBeautyFilter = new SimpleSmoothFilter();
+//        private GPUImageFilter mBeautyFilter = new MyBeautyFilter();
+//    private GPUImageFilter mBeautyFilter = new SimpleRGBMapFilter();
+    private SimpleCameraInput mSimpleCameraInput = new SimpleCameraInput();
+
+    private MagicCameraInputFilter mCameraInputFilter = new MagicCameraInputFilter();
+
+    private MyRGBMapFilter mMyMagicFilter = new MyRGBMapFilter();
+
 
     @Override   // SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
@@ -360,15 +387,25 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
                     new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
         } else {
             mCameraInputFilter.init();
+            mCameraInputFilter.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
+            mCameraInputFilter.onOutputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
+
+            mSimpleCameraInput.init();
+            mSimpleCameraInput.onOutputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
+            mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
+
+            mMyMagicFilter.init();
 
             mBeautyFilter.init();
             mBeautyFilter.onOutputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
             if (mBeautyFilter instanceof MagicBaseGroupFilter) {
                 ((MagicBaseGroupFilter) mBeautyFilter).setViewportParam(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
             } else if (mBeautyFilter instanceof MyGPUImageFilter) {
-                ((MyGPUImageFilter)mBeautyFilter).onInputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
+                ((MyGPUImageFilter) mBeautyFilter).onInputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
             } else {
             }
+
+
         }
 
         mTextureId = OpenGlUtils.getExternalOESTextureID();//mFullFrameBlit.createTextureObject();
@@ -389,30 +426,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         // TODO: adjust video width/height based on what we're getting from the camera preview?
         //       (can we guarantee that camera preview size is compatible with AVC video encoder?)
     }
-
-    @Override   // SurfaceHolder.Callback
-    public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-        Log.d(TAG, "surfaceChanged fmt=" + format + " size=" + width + "x" + height +
-                " holder=" + holder);
-    }
-
-    @Override   // SurfaceHolder.Callback
-    public void surfaceDestroyed(SurfaceHolder holder) {
-        Log.d(TAG, "surfaceDestroyed holder=" + holder);
-    }
-
-    @Override   // SurfaceTexture.OnFrameAvailableListener; runs on arbitrary thread
-    public void onFrameAvailable(SurfaceTexture surfaceTexture) {
-        //Log.d(TAG, "frame available");
-        mHandler.sendEmptyMessage(MainHandler.MSG_FRAME_AVAILABLE);
-    }
-
-
-
-//        private GPUImageFilter mBeautyFilter = new SimpleSmoothFilter();
-//    private MyGPUImageFilter mBeautyFilter = new MySmoothFilter();
-//        private GPUImageFilter mBeautyFilter = new MyBeautyFilter();
-    private GPUImageFilter mBeautyFilter = new MyRGBMapFilter();
 
     /**
      * Draws a frame onto the SurfaceView and the encoder surface.
@@ -435,16 +448,17 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         // Latch the next frame from the camera.
         mDisplaySurface.makeCurrent();
         mCameraTexture.updateTexImage();
-        mCameraTexture.getTransformMatrix(mTmpMatrix);
+        mCameraTexture.getTransformMatrix(mSTTransMatrix);
 
         // Fill the SurfaceView with it.
         SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
         int viewWidth = sv.getWidth();
         int viewHeight = sv.getHeight();
         GLES20.glViewport(0, 0, viewWidth, viewHeight);
+        mSimpleCameraInput.onOutputSizeChanged(viewWidth, viewHeight);
 
         if (!use_camera_inputer) {
-            mFullFrameBlit.drawFrame(mTextureId, mTmpMatrix);
+            mFullFrameBlit.drawFrame(mTextureId, mSTTransMatrix);
         } else {
             if (mUseBeauty) {
                 if (mBeautyFilter instanceof MagicBaseGroupFilter) {
@@ -453,11 +467,17 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
 //                    ((MyGPUImageFilter) mBeautyFilter).onDraw(mTextureId);
                     mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
                 } else {
-                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
+                    int id;
+                    mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
+                    id = mSimpleCameraInput.onDrawToTexture(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
+
+                    mBeautyFilter.onDraw(id, gLCubeBuffer, gLTextureBufferMirror);
                 }
             } else {
-                ((MagicCameraInputFilter) mCameraInputFilter).setTextureTransformMatrix(mTmpMatrix);
-                mCameraInputFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
+//                ((MagicCameraInputFilter) mCameraInputFilter).setTextureTransformMatrix(mSTTransMatrix);
+//                mCameraInputFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
+                mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
+                mSimpleCameraInput.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
             }
         }
 
@@ -468,8 +488,8 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         Timber.v("mDisplaySurface after swapBuffers");
 
         if (mReadPixel) {
-            MyUtil.tryReadPixels(VIDEO_WIDTH, VIDEO_HEIGHT, mOutput2Image ? mIvDump : null);
-//        MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
+//            MyUtil.tryReadPixels(VIDEO_WIDTH, 640, mOutput2Image ? mIvDump : null);
+            MyUtil.tryReadPixels(480, 640, mOutput2Image ? mIvDump : null);
         }
 
 

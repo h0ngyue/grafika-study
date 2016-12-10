@@ -80,7 +80,6 @@ public class MyGPUImageFilter extends GPUImageFilter {
         if (textureId != OpenGlUtils.NO_TEXTURE) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
             GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-//            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
             GLES20.glUniform1i(mGLUniformTexture, 0);
         }
         onDrawArraysPre();
@@ -89,7 +88,6 @@ public class MyGPUImageFilter extends GPUImageFilter {
         GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
         onDrawArraysAfter();
         GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-//        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
 //        return OpenGlUtils.ON_DRAWN;
 
     }
@@ -124,7 +122,6 @@ public class MyGPUImageFilter extends GPUImageFilter {
 		if (textureId != OpenGlUtils.NO_TEXTURE) {
             GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
 		    GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, textureId);
-//            GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, textureId);
 		    GLES20.glUniform1i(mGLUniformTexture, 0);
 		}
 		onDrawArraysPre();
@@ -133,7 +130,6 @@ public class MyGPUImageFilter extends GPUImageFilter {
 		GLES20.glDisableVertexAttribArray(mGLAttribTextureCoordinate);
 		onDrawArraysAfter();
 		GLES20.glBindTexture(GLES20.GL_TEXTURE_2D, 0);
-//        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, 0);
 		return OpenGlUtils.ON_DRAWN;
 	}
 

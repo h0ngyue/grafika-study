@@ -6,6 +6,7 @@ import android.opengl.GLES20;
 
 import com.android.grafika.R;
 
+import filter.base.gpuimage.GPUImageTwoInputFilter;
 import filter.utils.OpenGlUtils;
 
 
@@ -13,10 +14,11 @@ import filter.utils.OpenGlUtils;
  * Created by shuailongcheng on 06/12/2016.
  */
 
-public class MyRGBMapFilter extends MyGPUImageTwoInputFilter {
+public class SimpleRGBMapFilter extends GPUImageTwoInputFilter {
     int mLevel;
-    public MyRGBMapFilter() {
-        super( OpenGlUtils.readShaderFromRawResource(R.raw.lg_rgb_map_frag));
+
+    public SimpleRGBMapFilter() {
+        super(OpenGlUtils.readShaderFromRawResource(R.raw.lg_rgb_map_frag));
 
         Bitmap bitmap = BitmapFactory.decodeResource(BeautyCamera.context.getResources(), R.drawable.map);
         setBitmap(bitmap);

@@ -1,11 +1,10 @@
-#extension GL_OES_EGL_image_external : require
-precision mediump float;
+//#extension GL_OES_EGL_image_external : require
+//precision mediump float;
+//uniform samplerExternalOES inputImageTexture;
 
 // orig
 varying highp vec2 textureCoordinate;
-//uniform sampler2D inputImageTexture;
-uniform samplerExternalOES inputImageTexture;
-
+uniform sampler2D inputImageTexture;
 
 float microAdjust(float yuv, float threshold) {
     if (yuv <= threshold) {
