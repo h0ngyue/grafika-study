@@ -80,7 +80,10 @@ public class BeautySurfaceView extends SurfaceView {
     public volatile FloatBuffer gLTextureBufferMirror;
     public volatile FloatBuffer gLTextureBufferNormal;
 
-    private int mDefaultCameraWidth = 640, mDefaultCameraHeight = 480;
+    private boolean mIsCamera1;
+    private boolean mIsFront;
+    private int mDefaultCameraWidth = 640;
+    private int mDefaultCameraHeight = 480;
 
     public BeautySurfaceView(Context context) {
         super(context);
@@ -98,12 +101,49 @@ public class BeautySurfaceView extends SurfaceView {
     }
 
 
-    public void setCameraSize(int cameraWidth, int cameraHeight) {
+    public void setCameraInfo(boolean isCamera1, boolean isFront, int cameraWidth, int cameraHeight) {
+        mIsCamera1 = isCamera1;
+        mIsFront = isFront;
         mDefaultCameraWidth = cameraWidth;
         mDefaultCameraHeight = cameraHeight;
+
+        adjustToCameraInfo();
     }
 
     private void init() {
+        startRenderThread();
+
+        Timber.d("lifecycle init");
+        initAdjustBuffer();
+        adjustToCameraInfo();
+
+        getHolder().addCallback(new SurfaceHolder.Callback() {
+            @Override
+            public void surfaceCreated(SurfaceHolder holder) {
+                Timber.d("lifecycle surfaceCreated");
+                mSurfaceReady = true;
+
+                startRender(new RenderConfig(holder.getSurface(), mDefaultCameraWidth, mDefaultCameraHeight));
+
+                holder.setFixedSize(mDefaultCameraHeight, mDefaultCameraWidth);
+            }
+
+            @Override
+            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
+                Timber.d("lifecycle surfaceChanged, width:%d, height:%d", width, height);
+                mSurfaceWidth = width;
+                mSurfaceHeight = height;
+            }
+
+            @Override
+            public void surfaceDestroyed(SurfaceHolder holder) {
+                Timber.d("lifecycle surfaceDestroyed");
+                mSurfaceReady = false;
+            }
+        });
+    }
+
+    private void initAdjustBuffer() {
         gLCubeBuffer = ByteBuffer.allocateDirect(TextureRotationUtil.CUBE.length * 4)
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
@@ -118,38 +158,18 @@ public class BeautySurfaceView extends SurfaceView {
                 .order(ByteOrder.nativeOrder())
                 .asFloatBuffer();
         gLTextureBufferNormal.put(TextureRotationUtil.TEXTURE_NO_ROTATION).position(0);
-
-        adjustSize(270, true, false, gLTextureBufferNormal, gLCubeBuffer);
-//        adjustSize(90, true, false, gLTextureBufferMirror, gLCubeBuffer);
-
-        getHolder().addCallback(new SurfaceHolder.Callback() {
-            @Override
-            public void surfaceCreated(SurfaceHolder holder) {
-                mSurfaceReady = true;
-
-                startRender(new RenderConfig(holder.getSurface(), mDefaultCameraWidth, mDefaultCameraHeight));
-
-                holder.setFixedSize(mDefaultCameraHeight, mDefaultCameraWidth);
-            }
-
-            @Override
-            public void surfaceChanged(SurfaceHolder holder, int format, int width, int height) {
-                Timber.d("surfaceChanged, width:%d, height:%d", width, height);
-                mSurfaceWidth = width;
-                mSurfaceHeight = height;
-            }
-
-            @Override
-            public void surfaceDestroyed(SurfaceHolder holder) {
-                mSurfaceReady = false;
-            }
-        });
     }
 
-    private void adjustSize(int rotation, boolean flipHorizontal, boolean flipVertical, FloatBuffer texBuffer, FloatBuffer cubeBuffer) {
+    private void adjustToCameraInfo() {
+        // TODO: 10/12/2016 adjust according to camera1/camera2 and front/back
+        adjustSize(270, true, false, gLTextureBufferNormal, gLCubeBuffer);
+//        adjustSize(90, true, false, gLTextureBufferMirror, gLCubeBuffer);
+    }
+
+
+    private static void adjustSize(int rotation, boolean flipHorizontal, boolean flipVertical, FloatBuffer texBuffer, FloatBuffer cubeBuffer) {
         float[] textureCords = TextureRotationUtil.getRotation(Rotation.fromInt(rotation),
                 flipHorizontal, flipVertical);
-
         float[] cube = TextureRotationUtil.CUBE;
         cubeBuffer.clear();
         cubeBuffer.put(cube).position(0);
@@ -171,7 +191,6 @@ public class BeautySurfaceView extends SurfaceView {
     }
 
     private void startRender(RenderConfig config) {
-        startRenderThread();
         mHandler.sendMessage(mHandler.obtainMessage(MSG_START_RENDER, config));
     }
 
@@ -244,7 +263,6 @@ public class BeautySurfaceView extends SurfaceView {
                 }
             }
         }
-
     }
 
     public void setTextureId(int id) {
@@ -259,9 +277,9 @@ public class BeautySurfaceView extends SurfaceView {
 
 
     public void setCameraTexture(SurfaceTexture cameraTexture) {
+        Timber.d("setCameraTexture:" + cameraTexture);
         this.mCameraTexture = cameraTexture;
     }
-
 
     private static class RenderHandler extends Handler {
         private WeakReference<BeautySurfaceView> mWeakRenderer;
@@ -280,24 +298,23 @@ public class BeautySurfaceView extends SurfaceView {
                 return;
             }
 
-
             switch (msg.what) {
                 case MSG_START_RENDER:
-//                    Timber.d("handleMessage MSG_START_RENDER");
+                    Timber.e("handleMessage MSG_START_RENDER");
                     outputer.handleStartRender((RenderConfig) obj);
                     break;
                 case MSG_STOP_RENDER:
-//                    Timber.d("handleMessage MSG_STOP_RENDER");
+                    Timber.e("handleMessage MSG_STOP_RENDER");
                     outputer.handleStopRender();
                     break;
                 case MSG_FRAME_AVAILABLE:
-//                    Timber.d("handleMessage MSG_FRAME_AVAILABLE");
+                    Timber.d("handleMessage MSG_FRAME_AVAILABLE");
                     long timestamp = (((long) msg.arg1) << 32) |
                             (((long) msg.arg2) & 0xffffffffL);
                     outputer.handleDrawFrame((float[]) obj, timestamp);
                     break;
                 case MSG_SET_TEXTURE_ID:
-//                    Timber.d("handleMessage MSG_SET_TEXTURE_ID");
+                    Timber.d("handleMessage MSG_SET_TEXTURE_ID");
                     outputer.handleSetTexture(msg.arg1);
                     break;
                 case MSG_QUIT:
@@ -334,7 +351,7 @@ public class BeautySurfaceView extends SurfaceView {
      * 整个必须在activity 的onCreate里调用
      */
     private void handleStartRender(RenderConfig config) {
-        Timber.d("handleStartRender");
+        Timber.d("handleStartRender,  mDefaultCameraWidth:%d, mDefaultCameraHeight:%d", mDefaultCameraWidth, mDefaultCameraHeight);
         mEglCore = new EglCore(null, EglCore.FLAG_TRY_GLES3);
         mDisplaySurface = new WindowSurface(mEglCore, config.mSurface, false);
         mDisplaySurface.makeCurrent();
@@ -346,6 +363,7 @@ public class BeautySurfaceView extends SurfaceView {
 
 //        mSimpleCameraInput.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
 //        mBeautyFilter.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
+
         mSimpleCameraInput.onOutputSizeChanged(mDefaultCameraHeight, mDefaultCameraWidth);
         mBeautyFilter.onOutputSizeChanged(mDefaultCameraHeight, mDefaultCameraWidth);
     }
@@ -380,6 +398,8 @@ public class BeautySurfaceView extends SurfaceView {
         mDisplaySurface.makeCurrent();
 
         SurfaceTexture cameraST = mCameraTexture;
+
+        Timber.d("handleDrawFrame:" + cameraST);
         if (cameraST == null) {
             return;
         }
