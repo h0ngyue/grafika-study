@@ -47,10 +47,8 @@ import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
 import filter.MyBeautyFilter;
-import filter.MyRGBMapFilter;
 import filter.SimpleCameraInput;
 import filter.base.GPUImageFilter;
-import filter.base.MagicCameraInputFilter;
 import filter.utils.OpenGlUtils;
 import filter.utils.Rotation;
 import filter.utils.TextureRotationUtil;
@@ -150,7 +148,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_continuous_capture);
+        setContentView(R.layout.activity_continuous_capture2);
 
         SurfaceView sv = (SurfaceView) findViewById(R.id.continuousCapture_surfaceView);
         SurfaceHolder sh = sv.getHolder();
@@ -179,8 +177,7 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         });
 
 
-
-                mCbUseBeauty = (CheckBox) findViewById(R.id.mCbUseBeauty);
+        mCbUseBeauty = (CheckBox) findViewById(R.id.mCbUseBeauty);
         mCbUseBeauty.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -352,7 +349,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
         mSurfaceWidth = width;
         mSurfaceHeight = height;
 
-        mCameraInputFilter.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
         mSimpleCameraInput.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
         mBeautyFilter.onOutputSizeChanged(mSurfaceWidth, mSurfaceHeight);
     }
@@ -378,11 +374,6 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
     //    private GPUImageFilter mBeautyFilter = new SimpleRGBMapFilter();
     private SimpleCameraInput mSimpleCameraInput = new SimpleCameraInput();
 
-    private MagicCameraInputFilter mCameraInputFilter = new MagicCameraInputFilter();
-
-    private MyRGBMapFilter mMyMagicFilter = new MyRGBMapFilter();
-
-
     @Override   // SurfaceHolder.Callback
     public void surfaceCreated(SurfaceHolder holder) {
         Log.d(TAG, "surfaceCreated holder=" + holder);
@@ -403,22 +394,11 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             mFullFrameBlit = new FullFrameRect(
                     new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
         } else {
-            mCameraInputFilter.init();
-            mCameraInputFilter.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
-
             mSimpleCameraInput.init();
+//            mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
             mSimpleCameraInput.initCameraFrameBuffer(VIDEO_WIDTH, VIDEO_HEIGHT);
 
-            mMyMagicFilter.init();
-
             mBeautyFilter.init();
-//            mBeautyFilter.onOutputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
-//            if (mBeautyFilter instanceof MagicBaseGroupFilter) {
-//                ((MagicBaseGroupFilter) mBeautyFilter).setViewportParam(0, 0, VIDEO_WIDTH, VIDEO_HEIGHT);
-//            } else if (mBeautyFilter instanceof MyGPUImageFilter) {
-//                ((MyGPUImageFilter) mBeautyFilter).onInputSizeChanged(VIDEO_WIDTH, VIDEO_HEIGHT);
-//            } else {
-//            }
 
         }
 
@@ -491,21 +471,12 @@ public class ContinuousCaptureActivity2 extends Activity implements SurfaceHolde
             mFullFrameBlit.drawFrame(mTextureId, mSTTransMatrix);
         } else {
             if (mUseBeauty) {
-//                if (mBeautyFilter instanceof MagicBaseGroupFilter) {
-//                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
-//                } else if (mBeautyFilter instanceof MyGPUImageFilter) {
-////                    ((MyGPUImageFilter) mBeautyFilter).onDraw(mTextureId);
-//                    mBeautyFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferMirror);
-//                } else {
                 int id;
                 mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
                 id = mSimpleCameraInput.onDrawToTexture(mTextureId);
 
                 mBeautyFilter.onDraw(id, gLCubeBuffer, gLTextureBufferNormal);
-//                }
             } else {
-//                ((MagicCameraInputFilter) mCameraInputFilter).setTextureTransformMatrix(mSTTransMatrix);
-//                mCameraInputFilter.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
                 mSimpleCameraInput.setTextureTransformMatrix(mSTTransMatrix);
                 mSimpleCameraInput.onDraw(mTextureId, gLCubeBuffer, gLTextureBufferNormal);
             }

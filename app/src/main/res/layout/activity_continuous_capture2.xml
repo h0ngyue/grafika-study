@@ -1,0 +1,118 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".ContinuousCaptureActivity">
+
+    <Button
+        android:id="@+id/capture_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:onClick="clickCapture"
+        android:text="@string/capture" />
+
+    <com.android.grafika.AspectFrameLayout
+        android:id="@+id/continuousCapture_afl"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/capture_button"
+        android:layout_centerInParent="true">
+
+        <SurfaceView
+            android:id="@+id/continuousCapture_surfaceView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center" />
+
+    </com.android.grafika.AspectFrameLayout>
+
+    <TextView
+        android:id="@+id/recording_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignLeft="@id/continuousCapture_afl"
+        android:layout_alignTop="@id/continuousCapture_afl"
+        android:text="@string/nowRecording"
+        android:textAppearance="?android:attr/textAppearanceLarge"
+        android:textColor="#f00" />
+
+    <ImageView
+        android:id="@id/mIvDump"
+        android:layout_width="210dp"
+        android:layout_height="280dp"
+        android:layout_alignParentBottom="true" />
+
+
+    <LinearLayout
+        android:id="@+id/mLlBottom"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/mCbOutput2Image"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            android:layout_alignParentRight="true"
+            android:layout_weight="1"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
+            android:text="Output2Image" />
+
+        <CheckBox
+            android:id="@+id/mCbUseBeauty"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
+            android:text="Beauty" />
+
+        <CheckBox
+            android:id="@+id/mCbReadPixel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
+            android:text="ReadPixel" />
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/mLlBottom2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/mLlBottom"
+        android:orientation="horizontal">
+
+        <CheckBox
+            android:id="@+id/mCbPreReadPixel"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_gravity="right"
+            android:paddingBottom="30dp"
+            android:paddingTop="30dp"
+            android:text="PreReadPixel" />
+
+
+    </LinearLayout>
+
+    <TextView
+        android:id="@+id/mTvFps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/capture_button"
+        android:layout_alignBottom="@+id/capture_button"
+        android:layout_toEndOf="@+id/capture_button"
+        android:text="@string/secondsOfVideo" />
+
+</RelativeLayout>
