@@ -1,7 +1,6 @@
-package filter;
+package beauty_surfaceview;
 
 import java.util.Arrays;
-import java.util.List;
 
 import filter.base.GPUImageFilterGroup;
 
@@ -9,8 +8,8 @@ import filter.base.GPUImageFilterGroup;
  * Created by shuailongcheng on 06/12/2016.
  */
 
-public class MyBeautyFilter extends GPUImageFilterGroup {
-    public MyBeautyFilter() {
+public class SimpleBeautyFilter extends GPUImageFilterGroup {
+    public SimpleBeautyFilter() {
         super(Arrays.asList(new SimpleSmoothFilter(), new SimpleRGBMapFilter()));
     }
 }

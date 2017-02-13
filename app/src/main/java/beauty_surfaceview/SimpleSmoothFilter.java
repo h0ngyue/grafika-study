@@ -1,4 +1,4 @@
-package filter;
+package beauty_surfaceview;
 
 
 import com.android.grafika.R;

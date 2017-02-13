@@ -32,7 +32,7 @@ import android.widget.TextView;
 import java.io.IOException;
 
 import filter.utils.OpenGlUtils;
-import renderer.BeautySurfaceView;
+import beauty_surfaceview.BeautySurfaceView;
 import timber.log.Timber;
 
 /**

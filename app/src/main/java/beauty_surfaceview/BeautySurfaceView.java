@@ -1,4 +1,4 @@
-package renderer;
+package beauty_surfaceview;
 
 import android.content.Context;
 import android.graphics.SurfaceTexture;
@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import filter.MyBeautyFilter;
-import filter.SimpleCameraInput;
 import filter.base.GPUImageFilter;
 import filter.utils.Rotation;
 import filter.utils.TextureRotationUtil;
@@ -72,7 +70,7 @@ public class BeautySurfaceView extends SurfaceView {
     private SimpleCameraInput mSimpleCameraInput = new SimpleCameraInput();
 
     //    private GPUImageFilter mBeautyFilter = new SimpleSmoothFilter();
-    private GPUImageFilter mBeautyFilter = new MyBeautyFilter();
+    private GPUImageFilter mBeautyFilter = new SimpleBeautyFilter();
     //    private GPUImageFilter mBeautyFilter = new SimpleRGBMapFilter();
 
 

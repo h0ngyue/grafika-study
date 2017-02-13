@@ -1,4 +1,4 @@
-package filter;
+package beauty_surfaceview;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -6,6 +6,7 @@ import android.opengl.GLES20;
 
 import com.android.grafika.R;
 
+import filter.BeautyCamera;
 import filter.base.gpuimage.GPUImageTwoInputFilter;
 import filter.utils.OpenGlUtils;
 

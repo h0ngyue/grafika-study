@@ -394,6 +394,7 @@ public class ContinuousCaptureActivity extends Activity implements SurfaceHolder
         mDisplaySurface = new WindowSurface(mEglCore, holder.getSurface(), false);
         mDisplaySurface.makeCurrent();
 
+
         mFullFrameBlit = new FullFrameRect(
                 new Texture2dProgram(Texture2dProgram.ProgramType.TEXTURE_EXT));
         mTextureId = mFullFrameBlit.createTextureObject();

@@ -49,6 +49,7 @@ import com.android.grafika.gles.WindowSurface;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.ref.WeakReference;
 
 /**

@@ -1,4 +1,4 @@
-package filter;
+package beauty_surfaceview;
 
 import android.opengl.GLES11Ext;
 import android.opengl.GLES20;
